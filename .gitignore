@@ -1,0 +1,5 @@
+work_in_progress
+dist
+.pytest_cache
+src/trimes/__pycache__
+tests/__pycache__
