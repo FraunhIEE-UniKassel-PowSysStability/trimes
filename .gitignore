@@ -3,3 +3,4 @@ dist
 .pytest_cache
 src/trimes/__pycache__
 tests/__pycache__
+venv/
