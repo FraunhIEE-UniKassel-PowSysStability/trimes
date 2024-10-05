@@ -34,87 +34,34 @@ def subtract(
         pd.Series | pd.DataFrame: difference
     """
     if not extend:
-        t_start = ts.index.values[0]
-        t_end = ts.index.values[-1]
-        cutting_ts_is_required = False
-        if reference.index.values[0] < t_start or reference.index.values[-1] > t_end:
-            cutting_ts_is_required = True
-        if cutting_ts_is_required:
-            reference = get_between(reference, t_start, t_end)
+        reference = _avoid_extension(ts, reference)
     if resample_ts:
         ts = resample(ts, reference.index.values)
     return ts.sub(reference, axis=0)
 
 
-def sklearn_metric(
-    ts: pd.Series | pd.DataFrame,
-    reference: pd.Series,
-    fun: Callable,
+def add(
+    ts: pd.Series,
+    reference: pd.Series | pd.DataFrame,
+    extend: bool = False,
     resample_ts: bool = False,
-    sample_time: float | ArrayLike | None = None,
-    **kwargs,
-) -> np.array:
-    """Wrapper for scikit-learn metrics for time series.
-
-    Apply any metric provided by the callable 'fun' to 'reference' (desired time series) and 'ts' (actual time series).
-
-    The function allows to use metrics from scikit-learn (see scikit-learn.org/1.5/api/sklearn.metrics.html) to be used for time series (see example below).
-
-    Args:
-        reference (pd.Series): time series
-
-        ts (pd.Series | pd.DataFrame): time series
-
-        fun (Callable): Callable to calculate the metric (e.g. from sklearn.metrics module). Input arguments are 'reference' ('y_true' in sklearn), 'ts' ('y_pred' in sklearn). Keyword argument is 'sample_weight'.
-
-        resample_ts (bool, optional): If True, 'ts' is resampled with the index of 'reference'. If False, the sampling time of 'ts' and 'reference' must be equal. Defaults to False.
-
-    Returns:
-        np.array: metric
-
-    Examples:
-        - Get mean absolute percentage error of DataFrame 'df_ts' using the reference 'series_reference':
-
-            from sklearn.metrics import mean_absolute_percentage_error
-            metric(series_reference, df_ts, mean_absolute_percentage_error)
-
-
-    """
+) -> pd.Series | pd.DataFrame:
+    if not extend:
+        reference = _avoid_extension(ts, reference)
     if resample_ts:
         ts = resample(ts, reference.index.values)
-    if sample_time is None:
-        sample_weight = np.diff(reference.index.values)
-    elif np.isscalar(sample_time):
-        sample_weight = None
-    else:
-        sample_weight = sample_time
-    time_span = get_duration(reference)
-    # ic(sample_weight)
-    ic(time_span)
+    return ts.add(reference, axis=0)
 
-    if isinstance(ts, pd.Series):
-        return (
-            fun(
-                reference.to_numpy()[1:],
-                ts.to_numpy()[1:],
-                sample_weight=sample_weight,
-                **kwargs,
-            )
-            * time_span
-        )
-    else:
-        ref_np = reference.to_numpy()
-        return np.array(
-            [
-                fun(
-                    ref_np[1:],
-                    ts.to_numpy(),
-                    sample_weight=sample_weight,
-                    **kwargs,
-                )
-                * time_span
-            ]
-        )
+
+def _avoid_extension(ts, reference):
+    t_start = ts.index.values[0]
+    t_end = ts.index.values[-1]
+    cutting_ts_is_required = False
+    if reference.index.values[0] < t_start or reference.index.values[-1] > t_end:
+        cutting_ts_is_required = True
+    if cutting_ts_is_required:
+        reference = get_between(reference, t_start, t_end)
+    return reference
 
 
 def apply_operator_series(
@@ -156,13 +103,35 @@ def apply_operator_df(
 def greater_than_series(
     ts: pd.Series, reference: pd.Series, resample_ts: bool = False
 ) -> np.array:
-    return apply_operator_series(ts, reference, resample_ts)
+    return apply_operator_series(ts, reference, operator.gt, resample_ts)
 
 
 def less_than_series(
     ts: pd.Series, reference: pd.Series, resample_ts: bool = False
 ) -> np.array:
-    return apply_operator_series(ts, reference, resample_ts)
+    return apply_operator_series(ts, reference, operator.lt, resample_ts)
+
+
+def outside_envelope(
+    ts: pd.Series, envelope: pd.DataFrame, resample_ts: bool = False
+) -> np.array:
+    """_summary_
+
+    Args:
+        ts (pd.Series): time series
+
+        envelope (pd.DataFrame): first column is upper boundary, second column is lower boundary.
+
+        resample_ts (bool, optional): If True, 'ts' wil be resampled according to 'reference'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
+
+    Returns:
+        np.array: _description_
+    """
+    if resample_ts:
+        ts = resample(ts, envelope.index.values)
+    greater = apply_operator_series(ts, envelope.iloc[:, 0], operator.gt)
+    smaller = apply_operator_series(ts, envelope.iloc[:, 1], operator.lt)
+    return np.logical_or(greater, smaller)
 
 
 def comparison_series(
@@ -238,6 +207,7 @@ def envelope_comparison_series(
 
     Args:
         ts (pd.Series): time series
+
         envelope (pd.DataFrame): first column is upper boundary, second column is lower boundary.
 
         metric (Callable, optional): see 'comparison_series'. Defaults to integral_abs_error.

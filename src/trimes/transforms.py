@@ -6,7 +6,7 @@ from icecream import ic
 
 
 def transform_time_series(ts: pd.DataFrame, transform: Callable) -> pd.DataFrame:
-    """Apply transformation to time series
+    """Apply transformation to time series.
 
     Args:
         ts (pd.DataFrame): original
@@ -15,7 +15,6 @@ def transform_time_series(ts: pd.DataFrame, transform: Callable) -> pd.DataFrame
     Returns:
         pd.DataFrame: Transformed time series
     """
-
     ts_transformed = np.reshape(
         np.concatenate(ts.apply(transform, axis=1).to_numpy()), ts.shape
     )

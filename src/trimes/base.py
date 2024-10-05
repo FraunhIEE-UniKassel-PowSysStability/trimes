@@ -246,7 +246,7 @@ def get_delta_interp_series(s: pd.Series, tstart: int, tend: int):
         pd.DataFrame: Difference
     """
     values = interp_series(s, (tstart, tend))
-    return values[1] - values[0]
+    return values.iloc[1] - values.iloc[0]
 
 
 def get_duration(ts: pd.DataFrame | pd.Series):

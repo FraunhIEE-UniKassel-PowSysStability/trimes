@@ -42,7 +42,11 @@ def plot_2y(
 
 
 def fill_between(
-    ax: Axes, ts1: pd.Series, ts2: pd.Series, resample_ts: bool = True, **kwargs
+    ts1: pd.Series,
+    ts2: pd.Series,
+    ax: Axes | None = None,
+    resample_ts: bool = True,
+    **kwargs,
 ) -> None:
     """Fill area between time series 'ts1' and 'ts2'.
 
@@ -55,6 +59,8 @@ def fill_between(
     """
     if resample_ts:
         ts2 = resample(ts2, ts1.index.values)
+    if not ax:
+        ax = plt.gca()
     ax.fill_between(ts1.index.values, ts1.to_numpy(), ts2.to_numpy(), **kwargs)
 
 

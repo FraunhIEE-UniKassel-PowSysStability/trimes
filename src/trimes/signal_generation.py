@@ -5,12 +5,14 @@ import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 from icecream import ic
 
 from trimes.base import superpose_series, get_index, to_numpy_array
 
 
 class PeriodicSignal:
+    """Create periodic time series signals."""
 
     def __init__(
         self,
@@ -22,38 +24,48 @@ class PeriodicSignal:
         phi: float = 0.0,
     ) -> None:
         self.t: ArrayLike = t
+        "time"
         self.func: Callable = func
+        "function to create periodic signals (e.g. np.sin)"
         if isinstance(f, tuple):
             f = np.linspace(f[0], f[1], len(self.t))
         self.f: ArrayLike = f
+        "frequency"
         if isinstance(mag, tuple):
             mag = np.linspace(mag[0], mag[1], len(self.t))
         self.mag: ArrayLike = mag
+        "magnitude"
         if isinstance(offset, tuple):
             offset = np.linspace(offset[0], offset[1], len(self.t))
         self.offset: ArrayLike = offset
+        "y offset"
         self.phi: float = phi
+        "initial angle"
 
-    def get_signal(self):
-        return self.mag * self.func(self.get_angle()) + self.offset
+    def get_signal(self) -> ArrayLike:
+        return self.mag * self.func(self.get_angle_over_time()) + self.offset
 
-    def get_signal_from_angle(self, angle: ArrayLike):
+    def get_signal_from_angle(self, angle: ArrayLike) -> ArrayLike:
         return self.mag * self.func(angle) + self.offset
 
-    def get_signal_series(self):
+    def get_signal_series(self) -> pd.Series:
         series = pd.Series(self.get_signal(), index=self.t)
         series.index.name = "time"
         return series
 
-    def get_signal_series_from_angle(self, angle: ArrayLike):
+    def get_signal_series_from_angle(self, angle: ArrayLike) -> pd.Series:
         series = pd.Series(self.get_signal_from_angle(angle), index=self.t)
         series.index.name = "time"
         return series
 
-    def get_signal_n_phases(self, n: int):
+    def get_signal_n_phases(self, n: int) -> pd.DataFrame:
         return superimpose_and_concat_periodic_signals([[self]], num_phases=n)
 
-    def get_angle(self):
+    def get_angle_over_time(self) -> ArrayLike:
+        """Get angle over time.
+
+        Calculation is dependent on the frequency format (constant scalar number or gradient).
+        """
         if isinstance(self.f, Number):
             return 2 * np.pi * self.f * (self.t - self.t[0]) + self.phi
         else:
@@ -72,13 +84,20 @@ class PeriodicSignal:
             attrs_over_time[attr] = self.__getattribute__(attr)
         return attrs_over_time
 
-    def plot(self):
+    def plot(self, **kwargs):
         series = self.get_signal_series()
-        series.plot()
+        series.plot(**kwargs)
 
-    def plot_with_attributes(self, attributes: list[str] | None = None):
-        attr = self.get_signal_attributes_over_time()
+    def plot_with_attributes(self, attributes: list[str] | None = None) -> list[Axes]:
+        """Plot signal with attributes
 
+        Args:
+            attributes (list[str] | None, optional): Atrributes ('f', 'mag', 'offset'). Defaults to None (all).
+
+        Returns:
+            list[Axes]: Axes of plot.
+        """
+        attr = self.get_signal_attributes_over_time(attributes)
         fig, axes = plt.subplots(nrows=attr.shape[1] + 1, ncols=1)
         fig.tight_layout()
         plt.sca(axes[0])
@@ -143,7 +162,7 @@ def superimpose_and_concat_periodic_signals(
                 if angle_continuation:
                     signal.phi = phi[m]
                 signal.phi += phase_angle
-                angle = signal.get_angle()
+                angle = signal.get_angle_over_time()
                 signals_superposed[m] = signal.get_signal_series_from_angle(angle)
                 if angle_continuation:
                     phi[m] = angle[-1] + (angle[-1] - angle[-2]) - phase_angle
@@ -161,7 +180,19 @@ def get_attributes_of_superimposed_and_concatenated_signals_over_time(
     signals: list[list[PeriodicSignal]],
     columns: list[int] | None = None,
     attributes: list[str] | None = None,
-):
+) -> list[pd.DataFrame]:
+    """_summary_
+
+    Args:
+        signals (list[list[PeriodicSignal]]): List of lists of PeriodicSignal objects. The PeriodicSignals in each row are superimposed and the resulting column is concatenated.
+
+        columns (list[int] | None, optional): Columns for which attribute are returned. Defaults to None (all columns).
+
+        attributes (list[str] | None, optional): Attributes ('f', 'mag', 'offset'). Defaults to None (all).
+
+    Returns:
+        list[pd.DataFrame]: Attributes for columns.
+    """
     if columns is None:
         columns = range(0, len(signals[0]))
     attrs_of_columns = [None] * len(columns)
@@ -173,30 +204,85 @@ def get_attributes_of_superimposed_and_concatenated_signals_over_time(
     return attrs_of_columns
 
 
-def linear_time_series(t: ArrayLike, y: ArrayLike, sample_time: float) -> pd.DataFrame:
-    t = np.array(t)
+def linear_time_series(
+    t: ArrayLike, y: ArrayLike, sample_time: float
+) -> pd.DataFrame | pd.Series:
+    """Get linear time series.
+
+    Args:
+        t (ArrayLike): points in time
+        y (ArrayLike): y values corresponding to 't'
+        sample_time (float): sample time
+
+    Returns:
+        pd.DataFrame | pd.Series: time series
+    """
     t = make_monotonously_increasing(t, sample_time)
     ts = get_interpolated(t, y, sample_time)
     return ts
 
 
-def make_monotonously_increasing(t: ArrayLike, sample_time: float) -> np.array:
+def make_monotonously_increasing(t: ArrayLike, sample_time: float) -> ArrayLike:
+    """Make time 't' monotonously increasing.
+
+    Two consecutive values n, k in 't', where k <= n, are replaced with n, k+sample_time.
+
+    Args:
+        t (ArrayLike): time
+        sample_time (float): sample time
+
+    Returns:
+        ArrayLike: monotonously increasing time
+    """
+    t = np.array(t, dtype=float)
     diff_t_is_zero = np.concat([[False], np.diff(t) <= 0])
     t[diff_t_is_zero] = t[diff_t_is_zero] + sample_time
     return t
 
 
-def get_interpolated(t: ArrayLike, y: ArrayLike, sample_time: float) -> pd.DataFrame:
+def get_interpolated(
+    t: ArrayLike, y: ArrayLike | list[ArrayLike], sample_time: float
+) -> pd.DataFrame | pd.Series:
+    """Linear interpolated y (specified at 'sample_time') over 't'.
+
+    Args:
+        t (ArrayLike): time
+
+        y (ArrayLike | list[ArrayLike]): y values (length of first dimension matches 'sample_time') or list of y values to get several results.
+
+        sample_time (float): sample time (length of first dimension matches 'y')
+
+    Returns:
+        pd.DataFrame | pd.Series: interpolated values
+    """
     index = np.arange(t[0], t[-1] + sample_time, sample_time)
     if not isinstance(y, list):
+        return_series = True
         y = [y]
+    else:
+        return_series = False
     ts = pd.DataFrame(np.nan, index=index, columns=range(len(y)))
     ts.iloc[get_index(ts, t), :] = np.transpose(y)
     ts.interpolate(inplace=True)
+    ts.index.name = "time"
+    if return_series:
+        ts = ts.squeeze()
     return ts
 
 
 def mirror_y(ts: pd.Series, y: float, inplace=False):
+    """Mirror 'ts' at 'y'.
+
+    Args:
+        ts (pd.Series): time series
+
+        y (float): y (horizontal line for mirroring)
+
+        inplace (bool, optional): If True the mirored signal is added to 'ts' and a DataFrame is returned. Defaults to False (only mirrored signal series is returned).
+
+    Returns:
+        _type_: _description_
+    """
     mirrored_y = y - (ts - y)
     if inplace:
         ts = ts.to_frame()
