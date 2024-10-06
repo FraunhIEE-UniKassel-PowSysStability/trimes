@@ -193,11 +193,7 @@ print(
 )
 ```
 
-<<<<<<< HEAD
 For convenience there are also methods for envelopes instead of a single boundary.
-=======
-For convenience there are also methods for envelopes instead of a single boundarie.
->>>>>>> main
 
 ```{python}
 from trimes.comparison import envelope_comparison_series, envelope_comparison_df
