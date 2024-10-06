@@ -16,7 +16,7 @@ trimes provides functionality for pandas DataFrames (in the format mentioned abo
 
 and more.
 
-Have a look at the [documentation]([tutorials/overview.qmd](https://fraunhiee-unikassel-powsysstability.github.io/trimes/)) to get started.
+Have a look at the [documentation](https://fraunhiee-unikassel-powsysstability.github.io/trimes/docs/index.html) to get started.
 
 ## Installation
 
