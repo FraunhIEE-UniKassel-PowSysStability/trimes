@@ -1,0 +1,17 @@
+---
+title: 'Overview'
+toc: true
+number-sections: true
+---
+
+The following tutorials illustrate the funtionality of *trimes*.
+
+# Getting Started
+This [tutorial](getting_started.qmd) introduces the basic data structure of *trimes*. It covers basic concepts like (re-)sampling, interpolation and slicing. 
+
+# Time Series Comparison
+This [tutorial](time_series_comparison.qmd) covers the comparison between time series signals and the calculation of metrics. Starting from simple subtraction, metrics like root mean squared error for upper and lower boundaries (envelope) are calculated. Finally, step response data is analyzed. The tutorial also illustrates some helper functions for plotting (e.g. fill between two time series).
+
+# Time Series Generation
+This [tutorial](time_series_generation.qmd) covers the generation of time series signals. It is shown how to create linear interpolated signals and periodic signals (superimposing several frequencies).
+

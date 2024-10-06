@@ -1,0 +1,184 @@
+---
+title: 'Getting Started'
+toc: true
+number-sections: true
+mainfont: Arial
+format:
+  html: default
+---
+
+
+This tutorial introduces the basic data structure of *trimes*. It covers basic concepts like (re-)sampling, interpolation and slicing. Other tutorials cover more advanced applications.
+
+# Data Structure
+First we create a time series with two curves between 0 and 10 seconds. The time samples are randomly varied (sample time is not constant). This could be for example results of simulations with an adaptive (variable) step solver. Note that there is a separate tutorial where more convenient ways to create time series signals are shown, but we want to illustrate the illustrate the data structure here.
+
+```{python}
+import sys
+
+sys.path.append(r"..\..\src")
+import trimes
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+
+
+average_sample_time = 1e-3
+time = np.arange(0, 10, average_sample_time)
+time = time + (np.random.rand(len(time)) - 0.5) * 1e-5
+# Make sure that the first time step is zero and the last equals to 10. This is not a generic requirement of trimes, but necessary for this tutorial.
+time[0] = 0
+time[-1] = 10
+
+val_a = np.sin(time) + np.sin(time * 0.2)
+val_b = np.cos(time) + np.cos(time * 0.7)
+
+plt.plot(time, val_a, label="a")
+plt.plot(time, val_b, label="b")
+plt.legend(loc="upper center")
+plt.grid()
+
+print("Time samples:")
+print(time)
+```
+
+Let's create a pandas DataFrame. *trimes* requires the index to be the time variable. The index can be set at instantiation of the DataFrame or later using `set_index`.
+
+```{python}
+# Set index at in instantiation
+data = {"a": val_a, "b": val_b}
+df = pd.DataFrame(data, index=time)
+df.index.name = "time"
+print("Set index at initialization:")
+print(df.head())
+
+# Set index after instantiation
+data = {"time": time, "a": val_a, "b": val_b}
+df = pd.DataFrame(data)
+df.set_index("time", inplace=True)
+print("\nSet index after initialization:")
+print(df.head())
+```
+
+# Getting Data from Transient Time Series
+
+## Get Samples
+You can get samples from a DataFrame using the index with the `loc` method. But the input must be exact. Hence, `0.0` is accepted and returns a pandas Series object because there is a sample at exactly that time. However, `0.55` will throw a key error.
+
+```{python}
+df.loc[0.0]  # -> ok, because `0.0` is in df.index
+# df.loc[0.55] -> KeyError
+```
+
+The `get_sample` method of *trimes* returns a pandas Series object with the next sample after the queried time:
+
+```{python}
+trimes.get_sample(df, 0.0)  # -> same as df.loc[0.0]
+trimes.get_sample(df, 0.55)
+```
+
+`get_sample` and `get_sample_shifted` accept multiple samples and then return a DataFrame. `get_sample_shifted` shifts the returned samples. For example the input -1 returns the samples before the sample time:
+
+```{python}
+trimes.get_sample_shifted(df, [0.55, 2], -1)
+```
+
+You can also query samples around a point in time:
+
+```{python}
+trimes.get_samples_around(df, 0.55, -1, 2)
+```
+
+This returns the samples from -1 to 2 (relative to first sample after 0.55).
+
+These methods work with DataFrames as well as with Series:
+
+```{python}
+trimes.get_samples_around(df["a"], 0.55, -1, 2)
+```
+
+Whereas `get_sample` returns the values, `get_index` returns their index (index of first sample after point in time):
+
+```{python}
+index = trimes.get_index(df, 0.55)
+# Then iloc can be used
+df.iloc[index]
+```
+
+## Interpolation
+`interp_df` returns a DataFrame with interpolated (linear) values:
+
+```{python}
+trimes.interp_df(df, [0.5, 3])
+```
+
+`interp_df` returns a DataFrame even if there is only one sample. You can use `squeeze` to get a Series object:
+
+```{python}
+trimes.interp_df(df, [0.5]).squeeze(axis=0)
+```
+
+`interp_series` does the same with Series input and returns an array:
+
+```{python}
+trimes.interp_series(df["b"], [0.5, 0.7])
+```
+
+## Slicing
+The `loc` method of pandas works with slices even if the input time does not fit with the samples (9.5 is not in `time`):
+
+```{python}
+df.loc[9.5:10]
+```
+
+The method `get_between` of *trimes* works similar and is more performant. Note that one difference between `loc` and `get_between` is that `get_between` returns samples before the last time sample (in this case before 10).
+
+```{python}
+trimes.get_between(df, 9.5, 10)
+```
+
+```{python}
+%timeit df.loc[9.5:10]
+%timeit trimes.get_between(df, 9.5, 10)
+```
+
+*trimes* is more performant because it assumes that the index (time) is monotonously increasing and uses numpy's `searchsorted` function under the hood.
+
+## Delta Between Samples
+`get_delta` returns the difference between two samples (under the hood, `get_sample` is used, so the the next sample after the given time is used).
+
+```{python}
+trimes.get_delta(df, 0, 0.5)
+```
+
+One can also query the delta between interpolated (linear) values:
+
+```{python}
+delta = trimes.get_delta_interp_df(df, 0, 0.5)
+print(delta)
+trimes.get_delta_interp_series(df["a"], 0, 0.5)
+```
+
+`get_delta_shift` returns the delta between samples around a point in time, in this case between sample 2 before 0.1 and one sample after 0.1:
+
+```{python}
+trimes.get_delta_shift(df, 0.1, -2, 0)
+```
+
+```{python}
+trimes.get_delta_interp_df(df, 0, 0.5)
+```
+
+# Resampling
+The `resample` method... well you guessed it:
+
+```{python}
+df_resampled = trimes.resample(df, np.arange(0, 10.001, 1))
+print(df_resampled)
+plt.plot(df.index, df["a"], label="a original")
+plt.plot(df.index, df["b"], label="b original")
+plt.plot(df_resampled.index, df_resampled["a"], label="a resampled")
+plt.plot(df_resampled.index, df_resampled["b"], label="b resampled")
+plt.legend(loc="upper center")
+```
+
