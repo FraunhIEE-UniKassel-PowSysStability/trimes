@@ -1,12 +1,21 @@
 ---
-title: 'Getting Started'
+title: Getting Started
 toc: true
 number-sections: true
 mainfont: Arial
 format:
   html: default
+jupyter: python3
 ---
 
+```{python}
+#| echo: false
+#| output: false
+%load_ext autoreload
+%autoreload 2
+import sys
+sys.path.append(r"..\..\src")  # local path to trimes
+```
 
 This tutorial introduces the basic data structure of *trimes*. It covers basic concepts like (re-)sampling, interpolation and slicing. Other tutorials cover more advanced applications.
 
@@ -16,7 +25,7 @@ First we create a time series with two curves between 0 and 10 seconds. The time
 ```{python}
 import sys
 
-sys.path.append(r"..\..\src")
+sys.path.append(r"..\..\src")  # local path to trimes (usually not required)
 import trimes
 import numpy as np
 import pandas as pd
@@ -175,10 +184,11 @@ The `resample` method... well you guessed it:
 ```{python}
 df_resampled = trimes.resample(df, np.arange(0, 10.001, 1))
 print(df_resampled)
-plt.plot(df.index, df["a"], label="a original")
-plt.plot(df.index, df["b"], label="b original")
-plt.plot(df_resampled.index, df_resampled["a"], label="a resampled")
-plt.plot(df_resampled.index, df_resampled["b"], label="b resampled")
+df["a"].plot(label="a original")
+df["b"].plot(label="b original")
+df_resampled["a"].plot(label="a resampled")
+df_resampled["b"].plot(label="b resampled")
 plt.legend(loc="upper center")
+plt.grid()
 ```
 

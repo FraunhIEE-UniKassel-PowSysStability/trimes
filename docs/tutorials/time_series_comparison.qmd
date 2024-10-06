@@ -1,11 +1,21 @@
 ---
-title: 'Time Series Comparison'
+title: Time Series Comparison
 toc: true
 number-sections: true
 mainfont: Arial
 format:
   html: default
+jupyter: python3
 ---
+
+```{python}
+#| echo: false
+#| output: false
+%load_ext autoreload
+%autoreload 2
+import sys
+sys.path.append(r"..\..\src")  # local path to trimes
+```
 
 This tutorial covers the comparison between time series signals and the calculation of metrics. Starting from simple subtraction, metrics like root mean squared error for upper and lower boundaries (envelope) are calculated. Finally, step response data is analyzed. The tutorial also illustrates some helper functions for plotting (e.g. fill between two time series).
 
@@ -13,10 +23,6 @@ This tutorial covers the comparison between time series signals and the calculat
 First we create a time series with two curves between 0 and 5 seconds. The time samples are randomly varied (sample time is not constant). This could be for example results of simulations with an adaptive (variable) step solver. Note that there is a separate tutorial on signal generation. 
 
 ```{python}
-import sys
-
-sys.path.append(r"..\..\src")
-
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -82,6 +88,57 @@ signals_a_b_and_reference.plot(ax=ax)
 plt.grid()
 ```
 
+# Compare to Reference Signal
+A common use case is to check how well a signal aligns with a reference signal. We first create a periodic signal and a reference (note that there is a separate tutorial on signal generation). 
+
+```{python}
+from trimes.signal_generation import PeriodicSignal, linear_time_series
+from trimes.plots import fill_between
+
+sample_time = 1e-3
+signal = PeriodicSignal(
+    np.arange(0, 5 + sample_time, sample_time),
+    f=0.5,
+    offset=(1.5, 1),
+    mag=(2, 0.01),
+    phi=np.pi / 2,
+)
+wave = signal.get_signal_series()
+wave.name = "wave"
+ax = wave.plot()
+
+t = (0, 2, 5)
+y = (2, 1, 1)
+sample_time = 1e-3
+reference = linear_time_series(t, y, sample_time)
+reference.name = "reference"
+reference.plot(ax=ax, grid=True)
+fill_between(wave, reference, alpha=0.2)
+plt.legend()
+```
+
+`comparison_series` and `comparison_df` calculate any error metric (default is `integral_abs_error`, i.e. area) for series and dataframes. Some metrics are defined in `trimes.metrics`. Further metrics from the *scikit-learn* package can be used. 
+
+```{python}
+from trimes.comparison import comparison_series, comparison_df
+from trimes.metrics import integral_squared_error
+from sklearn.metrics import root_mean_squared_error
+
+
+
+print(comparison_series(wave, reference))
+print(comparison_series(wave, reference, metric=integral_squared_error))
+
+
+df_waves = pd.concat([wave, wave * 0.1], axis=1)
+print(
+    comparison_df(
+
+        df_waves, reference, metric=root_mean_squared_error, sample_time=sample_time
+    )
+)
+```
+
 # Boundaries and Envelopes
 
 ## Create Boundaries as Linear Time Series Signals
@@ -103,7 +160,6 @@ Create the periodic signal:
 
 ```{python}
 from trimes.signal_generation import PeriodicSignal
-from trimes.plots import fill_between
 
 signal = PeriodicSignal(
     np.arange(0, 5 + sample_time, sample_time),
@@ -136,6 +192,7 @@ greater_than_series(wave, upper_boundary)
 ```{python}
 import operator
 from trimes.comparison import apply_operator_series
+from trimes.plots import fill_between
 
 greater = apply_operator_series(wave, ts_envelope.iloc[:, 0], operator.gt)
 smaller = apply_operator_series(wave, ts_envelope.iloc[:, 1], operator.lt)
@@ -158,12 +215,21 @@ from trimes.comparison import outside_envelope
 outside_envelope(wave, ts_envelope)
 ```
 
+If you are interested in the time a condition is fullfilled (like a signal being outside an envelope), the `get_time_bool` function calculates the duration from a boolean array and the sampling time.
+
+```{python}
+from trimes.comparison import get_time_bool
+
+out = outside_envelope(wave, ts_envelope)
+get_time_bool(out, ts_envelope.index.values)
+```
+
 ## Calculate Metric
-Next we calculate metrics such as the area where the wave exceeds the envelope. `comparison_series`/`comparison_df` calculate any error metric (default is `itegral_abs_error`, i.e. area) for series and dataframes. Some metrics are defined in `trimes.metrics`. Further metrics from the *scikit-learn* package can be used.     
+Next we calculate metrics such as the area where the wave exceeds the envelope. `comparison_series`/`comparison_df` accept an operator as input argument to consider only time spans where the condition is `True`.    
 
 ```{python}
 from trimes.comparison import comparison_series, comparison_df
-from trimes.metrics import integral_squared_error, integral_abs_error
+from trimes.metrics import integral_squared_error
 from sklearn.metrics import root_mean_squared_error
 
 print(
@@ -184,7 +250,7 @@ print(
         df_waves,
         ts_envelope.iloc[:, 0],
         operator.gt,
-        metric=integral_abs_error,
+        metric=integral_squared_error,
     )
 )
 ```
@@ -196,12 +262,6 @@ from trimes.comparison import envelope_comparison_series, envelope_comparison_df
 
 envelope_comparison_series(wave, ts_envelope)
 envelope_comparison_df(df_waves, ts_envelope)
-```
-
-```{python}
-from trimes.comparison import envelope_comparison_df
-
-envelope_comparison_df(pd.concat([wave, wave], axis=1), ts_envelope)
 ```
 
 # Step Response Info

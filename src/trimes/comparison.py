@@ -115,7 +115,7 @@ def less_than_series(
 def outside_envelope(
     ts: pd.Series, envelope: pd.DataFrame, resample_ts: bool = False
 ) -> np.array:
-    """_summary_
+    """Get samples that are outside envelope.
 
     Args:
         ts (pd.Series): time series
@@ -125,7 +125,7 @@ def outside_envelope(
         resample_ts (bool, optional): If True, 'ts' wil be resampled according to 'reference'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
 
     Returns:
-        np.array: _description_
+        np.array: boolean array
     """
     if resample_ts:
         ts = resample(ts, envelope.index.values)
@@ -134,10 +134,29 @@ def outside_envelope(
     return np.logical_or(greater, smaller)
 
 
+def get_time_bool(
+    b: ArrayLike,
+    sample_time: float | ArrayLike,
+) -> float:
+    """Get time duration where 'b' is True.
+
+    Args:
+        b (ArrayLike): boolean
+        sample_time (ArrayLike): sampling time
+
+    Returns:
+        float: time duration
+    """
+    if np.isscalar(sample_time):
+        return b.sum() * sample_time
+    else:
+        return np.sum(np.diff(sample_time)[b[:-1]])
+
+
 def comparison_series(
     ts: pd.Series,
     reference: pd.Series,
-    operator: Callable,
+    operator_or_bool: Callable | ArrayLike | None = None,
     metric: Callable = integral_abs_error,
     sample_time: float | ArrayLike | None = None,
     resample_ts: bool = False,
@@ -149,10 +168,9 @@ def comparison_series(
 
         reference (pd.Series): reference to compare to.
 
+        operator_or_bool (Callable, optional): Operator (applied to 'ts' and 'reference') or boolean array to select time spans.
 
-        operator (Callable): _description_
-
-        metric (Callable): A callable as defined in sklearn.metrics, see for example sklearn.metrics.root_mean_squared_error (must have same arguments).
+        metric (Callable, optional): A callable as defined in sklearn.metrics, see for example sklearn.metrics.root_mean_squared_error (must have same arguments).
 
         sample_time (float | ArrayLike | None, optional): Sample time of ts. Defaults to None (will be calculated from 'ts.index').
 
@@ -163,21 +181,29 @@ def comparison_series(
     """
     if resample_ts:
         ts = resample(ts, reference.index.values)
-    mask = apply_operator_series(ts, reference, operator, resample_ts=False)
-    if np.any(mask):
-        ts_diff = reference.copy()
-        ts_diff[mask] = ts[mask]
-        return get_metric_time_series(
-            ts_diff, reference, metric, sample_time=sample_time
-        )
+    if operator_or_bool is not None:
+        if isinstance(operator_or_bool, Callable):
+            mask = apply_operator_series(
+                ts, reference, operator_or_bool, resample_ts=False
+            )
+        else:
+            mask = operator_or_bool
+        if np.any(mask):
+            ts_diff = reference.copy()
+            ts_diff[mask] = ts[mask]
+            return get_metric_time_series(
+                ts_diff, reference, metric, sample_time=sample_time
+            )
+        else:
+            return 0.0
     else:
-        return 0.0
+        return get_metric_time_series(ts, reference, metric, sample_time=sample_time)
 
 
 def comparison_df(
     ts: pd.DataFrame,
     reference: pd.Series,
-    operator: Callable,
+    operator_or_bool: Callable = None,
     metric: Callable = integral_abs_error,
     resample_ts: bool = False,
     sample_time: float | ArrayLike | None = None,
@@ -185,16 +211,24 @@ def comparison_df(
     """Compare time series to a reference (and calculate error metric). See 'comparison_series'."""
     if resample_ts:
         ts = resample(ts, reference.index.values)
-    masks = apply_operator_df(ts, reference, operator, resample_ts=False)
-    errors = np.zeros(masks.shape[1])
-    for col, mask in enumerate(masks.T):
-        if np.any(mask):
-            ts_diff = reference.copy()
-            ts_diff[mask] = ts.iloc[:, col][mask]
-            errors[col] = get_metric_time_series(
-                ts_diff, reference, metric, sample_time=sample_time
+    if operator_or_bool is not None:
+        if isinstance(operator_or_bool, Callable):
+            masks = apply_operator_df(
+                ts, reference, operator_or_bool, resample_ts=False
             )
-    return errors
+        else:
+            masks = operator_or_bool
+        errors = np.zeros(masks.shape[1])
+        for col, mask in enumerate(masks.T):
+            if np.any(mask):
+                ts_diff = reference.copy()
+                ts_diff[mask] = ts.iloc[:, col][mask]
+                errors[col] = get_metric_time_series(
+                    ts_diff, reference, metric, sample_time=sample_time
+                )
+        return errors
+    else:
+        return get_metric_time_series(ts, reference, metric, sample_time=sample_time)
 
 
 def envelope_comparison_series(

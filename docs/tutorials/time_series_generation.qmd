@@ -1,19 +1,25 @@
 ---
-title: 'Time Series Generation'
+title: Time Series Generation
 toc: true
 number-sections: true
 mainfont: Arial
 format:
   html: default
+jupyter: python3
 ---
+
+```{python}
+#| echo: false
+#| output: false
+%load_ext autoreload
+%autoreload 2
+import sys
+sys.path.append(r"..\..\src")  # local path to trimes
+```
 
 This tutorial covers the generation of time series signals. It is shown how to create linear interpolated signals and periodic signals (superimposing several frequencies).
 
 ```{python}
-import sys
-
-sys.path.append(r"..\..\src")
-
 import numpy as np
 from matplotlib import pyplot as plt
 ```

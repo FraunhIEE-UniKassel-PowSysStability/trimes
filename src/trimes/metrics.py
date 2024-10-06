@@ -38,7 +38,7 @@ def get_metric_time_series(
     if sample_time is None:
         sample_weight = np.diff(reference.index.values)
     elif np.isscalar(sample_time):
-        sample_weight = np.repeat(sample_time, len(reference) - 1)
+        sample_weight = np.broadcast_to(sample_time, len(reference) - 1)
     else:
         sample_weight = sample_time
     return get_metric_np(
@@ -70,9 +70,13 @@ def get_metric_np(
         sample_weight (ArrayLike | None, optional): Sample weights (sampling time for time series). Defaults to None.
 
     Returns:
-        float | ArrayLike: _description_
+        float | ArrayLike: metric result
     """
-    multioutput = "raw_values" if ts.ndim > 1 else "uniform_average"
+    if ts.ndim > 1:
+        multioutput = "raw_values"
+        reference = np.broadcast_to(reference, (ts.ndim, len(sample_weight))).T
+    else:
+        multioutput = "uniform_average"
     return metric(
         reference, ts, sample_weight=sample_weight, multioutput=multioutput, **kwargs
     )
@@ -101,7 +105,7 @@ def integral_abs_error(
         float | ArrayLike: result
     """
     weighted_error = _weighted_error(y_true, y_pred, sample_weight)
-    integrated_error = np.sum(np.trapezoid(np.abs(weighted_error), axis=0))
+    integrated_error = np.trapezoid(np.abs(weighted_error), axis=0)
     return _handle_sklearn_multioutput(multioutput, integrated_error)
 
 
@@ -125,12 +129,12 @@ def integral_squared_error(
         float | ArrayLike: result
     """
     weighted_error = _weighted_error(y_true, y_pred, sample_weight)
-    integrated_error = np.sum(np.trapezoid(np.square(weighted_error), axis=0))
+    integrated_error = np.trapezoid(np.square(weighted_error), axis=0)
     return _handle_sklearn_multioutput(multioutput, integrated_error)
 
 
 def _weighted_error(y_true, y_pred, sample_weight):
-    return np.transpose((y_pred.T - y_true) * sample_weight)
+    return (y_pred - y_true) * sample_weight[:, np.newaxis]
 
 
 def _handle_sklearn_multioutput(
