@@ -8,8 +8,6 @@ website:
   title: "trimes"
   page-navigation: true
   back-to-top-navigation: true
-  repo-url: https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes
-  repo-actions: [edit, source, issue]
   navbar:
     left:
       - text: Home
