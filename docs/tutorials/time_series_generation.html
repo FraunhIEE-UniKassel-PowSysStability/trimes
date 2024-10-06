@@ -246,18 +246,14 @@ window.Quarto = {
 
 
 <p>This tutorial covers the generation of time series signals. It is shown how to create linear interpolated signals and periodic signals (superimposing several frequencies).</p>
-<div id="b22f08a2" class="cell" data-execution_count="1">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.append(<span class="vs">r"..\..\src"</span>)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib <span class="im">import</span> pyplot <span class="im">as</span> plt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="55cb16df" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib <span class="im">import</span> pyplot <span class="im">as</span> plt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="linear-signals" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Linear Signals</h1>
 <p>Linear interpolated time series signals can be created by specifying points in time <code>t</code> and the corresponding values <code>y</code>:</p>
-<div id="c31571d3" class="cell" data-execution_count="2">
+<div id="e92039a5" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> linear_time_series</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> (<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">5</span>)</span>
@@ -269,13 +265,13 @@ window.Quarto = {
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_generation_files/figure-html/cell-3-output-1.png" width="571" height="429" class="figure-img"></p>
+<p><img src="time_series_generation_files/figure-html/cell-4-output-1.png" width="571" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>If <code>y</code> is a list, several lines are generated:</p>
-<div id="b6a2ed65" class="cell" data-execution_count="3">
+<div id="082a21ca" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> (<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">5</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> [(<span class="dv">2</span>, <span class="dv">2</span>, <span class="fl">1.5</span>, <span class="fl">1.2</span>, <span class="fl">1.2</span>), (<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>)]</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -285,13 +281,13 @@ window.Quarto = {
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_generation_files/figure-html/cell-4-output-1.png" width="579" height="429" class="figure-img"></p>
+<p><img src="time_series_generation_files/figure-html/cell-5-output-1.png" width="579" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>Symmetric signals can also be created using <code>mirror_y</code> (mirroring of the signal at a y-value):</p>
-<div id="9b3a6213" class="cell" data-execution_count="4">
+<div id="bd387be4" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> mirror_y</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>upper_boundary <span class="op">=</span> ts.iloc[:, <span class="dv">0</span>]</span>
@@ -299,13 +295,13 @@ window.Quarto = {
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>ts_envelope.columns <span class="op">=</span> (<span class="st">"upper boundary"</span>, <span class="st">"lower boundary"</span>)</span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> ts_envelope.plot(grid<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="bu">type</span>(a)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="4">
+<div class="cell-output cell-output-display" data-execution_count="5">
 <pre><code>matplotlib.axes._axes.Axes</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_generation_files/figure-html/cell-5-output-2.png" width="579" height="429" class="figure-img"></p>
+<p><img src="time_series_generation_files/figure-html/cell-6-output-2.png" width="579" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
@@ -314,7 +310,7 @@ window.Quarto = {
 <section id="periodic-signals" class="level1" data-number="2">
 <h1 data-number="2"><span class="header-section-number">2</span> Periodic Signals</h1>
 <p>The <code>PeriodicSignal</code> class can be used to create periodic signals of any shape (flexibly set parameters like frequency, magnitude, offset and initial angle). By default, cosine signals are created:</p>
-<div id="53ad5b09" class="cell" data-execution_count="5">
+<div id="e7dae21c" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> PeriodicSignal</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>sample_time <span class="op">=</span> <span class="fl">1e-4</span></span>
@@ -328,13 +324,13 @@ window.Quarto = {
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_generation_files/figure-html/cell-6-output-1.png" width="577" height="429" class="figure-img"></p>
+<p><img src="time_series_generation_files/figure-html/cell-7-output-1.png" width="577" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>To create gradients, use tuples as parameters (<strong>don’t use lists</strong>).</p>
-<div id="4ed5fec5" class="cell" data-execution_count="6">
+<div id="8fda092f" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>plt.close(<span class="st">"all"</span>)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>cosine_wave <span class="op">=</span> PeriodicSignal(</span>
@@ -344,25 +340,25 @@ window.Quarto = {
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_generation_files/figure-html/cell-7-output-1.png" width="586" height="429" class="figure-img"></p>
+<p><img src="time_series_generation_files/figure-html/cell-8-output-1.png" width="586" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>The <code>plot_with_attributes</code> illustrates the signal as well as its parameters over time.</p>
-<div id="1ef44053" class="cell" data-execution_count="7">
+<div id="0bdcae99" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>cosine_wave.plot_with_attributes()</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>plt.grid()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_generation_files/figure-html/cell-8-output-1.png" width="671" height="485" class="figure-img"></p>
+<p><img src="time_series_generation_files/figure-html/cell-9-output-1.png" width="671" height="485" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>Symmetric multi-phase signals can be created based on the <code>PeriodicSignal</code> class by using <code>get_signal_n_phases</code> (angular phase difference between signals is <span class="math inline">\(360/n\)</span>):</p>
-<div id="80bc4346" class="cell" data-execution_count="8">
+<div id="a67cbda7" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>cosine_wave <span class="op">=</span> PeriodicSignal(</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    np.arange(<span class="dv">0</span>, <span class="fl">0.1</span>, sample_time), f<span class="op">=</span>(<span class="dv">50</span>, <span class="dv">55</span>), mag<span class="op">=</span>(<span class="fl">0.9</span> <span class="op">*</span> mag, <span class="fl">1.1</span> <span class="op">*</span> mag)</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>)</span>
@@ -371,13 +367,13 @@ window.Quarto = {
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_generation_files/figure-html/cell-9-output-1.png" width="586" height="429" class="figure-img"></p>
+<p><img src="time_series_generation_files/figure-html/cell-10-output-1.png" width="586" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>Signals can be superimposed and concatenated by creating an array of signals. The rows of the array are superimposed and the resulting column is concatenated. The following signal is created: - two time periods (with varying frequencies) - 0-0.1 s - 0.1-0.2 s - several frequencies are superimposed: - fundamental: <span class="math inline">\(50\)</span> Hz (actually varies between <span class="math inline">\(50\)</span> and <span class="math inline">\(52\)</span> Hz) - fifth harmonic: <span class="math inline">\(5*50=250\)</span> Hz - negative sequence: rotating with <span class="math inline">\(-50\)</span> Hz (actually varies between <span class="math inline">\(-50\)</span> and <span class="math inline">\(-52\)</span> Hz) - <span class="math inline">\(3\)</span> phases</p>
-<div id="3bbcbca0" class="cell" data-execution_count="9">
+<div id="a7d080af" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> (</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    superimpose_and_concat_periodic_signals,</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>)</span>
@@ -403,13 +399,13 @@ window.Quarto = {
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_generation_files/figure-html/cell-10-output-1.png" width="586" height="429" class="figure-img"></p>
+<p><img src="time_series_generation_files/figure-html/cell-11-output-1.png" width="586" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>The parameters of the signals can be exctracted using <code>get_attributes_of_superimposed_and_concatenated_signals_over_time</code> and illustrated:</p>
-<div id="6fd42946" class="cell" data-execution_count="10">
+<div id="25cfe14b" class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> (</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    get_attributes_of_superimposed_and_concatenated_signals_over_time,</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>)</span>
@@ -426,21 +422,21 @@ window.Quarto = {
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_generation_files/figure-html/cell-11-output-1.png" width="566" height="431" class="figure-img"></p>
+<p><img src="time_series_generation_files/figure-html/cell-12-output-1.png" width="566" height="431" class="figure-img"></p>
 </figure>
 </div>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_generation_files/figure-html/cell-11-output-2.png" width="575" height="431" class="figure-img"></p>
+<p><img src="time_series_generation_files/figure-html/cell-12-output-2.png" width="575" height="431" class="figure-img"></p>
 </figure>
 </div>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_generation_files/figure-html/cell-11-output-3.png" width="577" height="431" class="figure-img"></p>
+<p><img src="time_series_generation_files/figure-html/cell-12-output-3.png" width="577" height="431" class="figure-img"></p>
 </figure>
 </div>
 </div>

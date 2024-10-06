@@ -191,13 +191,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#addition-and-subtraction" id="toc-addition-and-subtraction" class="nav-link active" data-scroll-target="#addition-and-subtraction"><span class="header-section-number">1</span> Addition and Subtraction</a></li>
-  <li><a href="#boundaries-and-envelopes" id="toc-boundaries-and-envelopes" class="nav-link" data-scroll-target="#boundaries-and-envelopes"><span class="header-section-number">2</span> Boundaries and Envelopes</a>
+  <li><a href="#compare-to-reference-signal" id="toc-compare-to-reference-signal" class="nav-link" data-scroll-target="#compare-to-reference-signal"><span class="header-section-number">2</span> Compare to Reference Signal</a></li>
+  <li><a href="#boundaries-and-envelopes" id="toc-boundaries-and-envelopes" class="nav-link" data-scroll-target="#boundaries-and-envelopes"><span class="header-section-number">3</span> Boundaries and Envelopes</a>
   <ul class="collapse">
-  <li><a href="#create-boundaries-as-linear-time-series-signals" id="toc-create-boundaries-as-linear-time-series-signals" class="nav-link" data-scroll-target="#create-boundaries-as-linear-time-series-signals"><span class="header-section-number">2.1</span> Create Boundaries as Linear Time Series Signals</a></li>
-  <li><a href="#check-boundaries" id="toc-check-boundaries" class="nav-link" data-scroll-target="#check-boundaries"><span class="header-section-number">2.2</span> Check Boundaries</a></li>
-  <li><a href="#calculate-metric" id="toc-calculate-metric" class="nav-link" data-scroll-target="#calculate-metric"><span class="header-section-number">2.3</span> Calculate Metric</a></li>
+  <li><a href="#create-boundaries-as-linear-time-series-signals" id="toc-create-boundaries-as-linear-time-series-signals" class="nav-link" data-scroll-target="#create-boundaries-as-linear-time-series-signals"><span class="header-section-number">3.1</span> Create Boundaries as Linear Time Series Signals</a></li>
+  <li><a href="#check-boundaries" id="toc-check-boundaries" class="nav-link" data-scroll-target="#check-boundaries"><span class="header-section-number">3.2</span> Check Boundaries</a></li>
+  <li><a href="#calculate-metric" id="toc-calculate-metric" class="nav-link" data-scroll-target="#calculate-metric"><span class="header-section-number">3.3</span> Calculate Metric</a></li>
   </ul></li>
-  <li><a href="#step-response-info" id="toc-step-response-info" class="nav-link" data-scroll-target="#step-response-info"><span class="header-section-number">3</span> Step Response Info</a></li>
+  <li><a href="#step-response-info" id="toc-step-response-info" class="nav-link" data-scroll-target="#step-response-info"><span class="header-section-number">4</span> Step Response Info</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes/edit/main/docs/tutorials/time_series_comparison.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes/blob/main/docs/tutorials/time_series_comparison.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li><li><a href="https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -227,39 +228,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="addition-and-subtraction" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Addition and Subtraction</h1>
 <p>First we create a time series with two curves between 0 and 5 seconds. The time samples are randomly varied (sample time is not constant). This could be for example results of simulations with an adaptive (variable) step solver. Note that there is a separate tutorial on signal generation.</p>
-<div id="f7fb0f29" class="cell" data-execution_count="1">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.append(<span class="vs">r"..\..\src"</span>)</span>
+<div id="8d8e861c" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib <span class="im">import</span> pyplot <span class="im">as</span> plt</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib <span class="im">import</span> pyplot <span class="im">as</span> plt</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> PeriodicSignal</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>t_start <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>t_end <span class="op">=</span> <span class="dv">5</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>average_sample_time <span class="op">=</span> <span class="fl">1e-3</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>time <span class="op">=</span> np.arange(t_start, t_end, average_sample_time)</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>time <span class="op">=</span> time <span class="op">+</span> (np.random.rand(<span class="bu">len</span>(time)) <span class="op">-</span> <span class="fl">0.5</span>) <span class="op">*</span> <span class="fl">1e-5</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>sig_a <span class="op">=</span> PeriodicSignal(time, mag<span class="op">=</span><span class="fl">0.8</span>, f<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>sig_b <span class="op">=</span> PeriodicSignal(time, mag<span class="op">=</span><span class="fl">0.6</span>, f<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>df_ts <span class="op">=</span> pd.DataFrame({<span class="st">"a"</span>: sig_a.get_signal(), <span class="st">"b"</span>: sig_b.get_signal()}, index<span class="op">=</span>time)</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>df_ts.index.name <span class="op">=</span> <span class="st">"time"</span></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>df_ts.plot(grid<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> PeriodicSignal</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>t_start <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>t_end <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>average_sample_time <span class="op">=</span> <span class="fl">1e-3</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>time <span class="op">=</span> np.arange(t_start, t_end, average_sample_time)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>time <span class="op">=</span> time <span class="op">+</span> (np.random.rand(<span class="bu">len</span>(time)) <span class="op">-</span> <span class="fl">0.5</span>) <span class="op">*</span> <span class="fl">1e-5</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>sig_a <span class="op">=</span> PeriodicSignal(time, mag<span class="op">=</span><span class="fl">0.8</span>, f<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>sig_b <span class="op">=</span> PeriodicSignal(time, mag<span class="op">=</span><span class="fl">0.6</span>, f<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>df_ts <span class="op">=</span> pd.DataFrame({<span class="st">"a"</span>: sig_a.get_signal(), <span class="st">"b"</span>: sig_b.get_signal()}, index<span class="op">=</span>time)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>df_ts.index.name <span class="op">=</span> <span class="st">"time"</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>df_ts.plot(grid<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_comparison_files/figure-html/cell-2-output-1.png" width="582" height="429" class="figure-img"></p>
+<p><img src="time_series_comparison_files/figure-html/cell-3-output-1.png" width="582" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>Next we create a reference signal with a different sampling time compared to above.</p>
-<div id="13df95e4" class="cell" data-execution_count="2">
+<div id="2a655ebf" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>time <span class="op">=</span> np.linspace(t_start <span class="op">-</span> <span class="dv">1</span>, t_end <span class="op">+</span> <span class="dv">1</span>, <span class="dv">100</span>)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>sig_ref <span class="op">=</span> PeriodicSignal(time, mag<span class="op">=</span><span class="dv">1</span>, f<span class="op">=</span><span class="fl">0.3</span>, phi<span class="op">=-</span><span class="dv">2</span>)</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>series_reference <span class="op">=</span> sig_ref.get_signal_series()</span>
@@ -272,14 +269,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_comparison_files/figure-html/cell-3-output-1.png" width="590" height="429" class="figure-img"></p>
+<p><img src="time_series_comparison_files/figure-html/cell-4-output-1.png" width="590" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>We calculate the difference between signals ‘a’/‘b’ and the reference. Signals ‘a’/‘b’ are automatically resampled according to the reference, i.e.&nbsp;the option <code>resample_ts</code> is set to <code>True</code>. The option is available in most of the functions in the following but is set to <code>False</code> by default to avoid unnecessary resampling that deteriorates the performance.</p>
 <p>A diagram with two y-axes is used for visualization (original signals on the left axis, difference on the right). In addition, the area between ‘b’ and ‘reference’ is filled.</p>
-<div id="379ac05e" class="cell" data-execution_count="3">
+<div id="cd773f8e" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> subtract</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.plots <span class="im">import</span> plot_2y, fill_between</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -295,13 +292,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_comparison_files/figure-html/cell-4-output-1.png" width="640" height="429" class="figure-img"></p>
+<p><img src="time_series_comparison_files/figure-html/cell-5-output-1.png" width="640" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>Addition works similar:</p>
-<div id="005bd0f2" class="cell" data-execution_count="4">
+<div id="72940ccf" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> add</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="bu">sum</span> <span class="op">=</span> add(df_ts, series_reference, resample_ts<span class="op">=</span><span class="va">True</span>)</span>
@@ -312,54 +309,39 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_comparison_files/figure-html/cell-5-output-1.png" width="582" height="429" class="figure-img"></p>
+<p><img src="time_series_comparison_files/figure-html/cell-6-output-1.png" width="582" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 </section>
-<section id="boundaries-and-envelopes" class="level1" data-number="2">
-<h1 data-number="2"><span class="header-section-number">2</span> Boundaries and Envelopes</h1>
-<section id="create-boundaries-as-linear-time-series-signals" class="level2" data-number="2.1">
-<h2 data-number="2.1" class="anchored" data-anchor-id="create-boundaries-as-linear-time-series-signals"><span class="header-section-number">2.1</span> Create Boundaries as Linear Time Series Signals</h2>
-<p>We will create boundaries and check whether a time series signal remains within the envelope and calculate error metrics.</p>
-<div id="22f0782e" class="cell" data-execution_count="5">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> linear_time_series, mirror_y</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> (<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">5</span>)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> (<span class="dv">2</span>, <span class="dv">2</span>, <span class="fl">1.5</span>, <span class="fl">1.2</span>, <span class="fl">1.2</span>)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>sample_time <span class="op">=</span> <span class="fl">1e-3</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>ts <span class="op">=</span> linear_time_series(t, y, sample_time)</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>ts_envelope <span class="op">=</span> mirror_y(ts, <span class="dv">1</span>, inplace<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>ts_envelope.columns <span class="op">=</span> (<span class="st">"upper boundary"</span>, <span class="st">"lower boundary"</span>)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>ts_envelope.plot(grid<span class="op">=</span><span class="va">True</span>, linestyle<span class="op">=</span><span class="st">"--"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="time_series_comparison_files/figure-html/cell-6-output-1.png" width="579" height="429" class="figure-img"></p>
-</figure>
-</div>
-</div>
-</div>
-<p>Create the periodic signal:</p>
-<div id="bd2f4c7a" class="cell" data-execution_count="6">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> PeriodicSignal</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.plots <span class="im">import</span> fill_between</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>signal <span class="op">=</span> PeriodicSignal(</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    np.arange(<span class="dv">0</span>, <span class="dv">5</span> <span class="op">+</span> sample_time, sample_time),</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    f<span class="op">=</span><span class="fl">0.5</span>,</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    offset<span class="op">=</span>(<span class="fl">1.5</span>, <span class="dv">1</span>),</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    mag<span class="op">=</span>(<span class="dv">2</span>, <span class="fl">0.01</span>),</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    phi<span class="op">=</span>np.pi <span class="op">/</span> <span class="dv">2</span>,</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>wave <span class="op">=</span> signal.get_signal_series()</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>wave.name <span class="op">=</span> <span class="st">"wave"</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plt.subplot()</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>wave.plot(ax<span class="op">=</span>ax)</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>ts_envelope.plot(ax<span class="op">=</span>ax, linestyle<span class="op">=</span><span class="st">"--"</span>)</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>plt.grid()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="compare-to-reference-signal" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Compare to Reference Signal</h1>
+<p>A common use case is to check how well a signal aligns with a reference signal. We first create a periodic signal and a reference (note that there is a separate tutorial on signal generation).</p>
+<div id="60cbfd79" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> PeriodicSignal, linear_time_series</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.plots <span class="im">import</span> fill_between</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>sample_time <span class="op">=</span> <span class="fl">1e-3</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>signal <span class="op">=</span> PeriodicSignal(</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    np.arange(<span class="dv">0</span>, <span class="dv">5</span> <span class="op">+</span> sample_time, sample_time),</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    f<span class="op">=</span><span class="fl">0.5</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    offset<span class="op">=</span>(<span class="fl">1.5</span>, <span class="dv">1</span>),</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    mag<span class="op">=</span>(<span class="dv">2</span>, <span class="fl">0.01</span>),</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    phi<span class="op">=</span>np.pi <span class="op">/</span> <span class="dv">2</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>wave <span class="op">=</span> signal.get_signal_series()</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>wave.name <span class="op">=</span> <span class="st">"wave"</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> wave.plot()</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> (<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">5</span>)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> (<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>sample_time <span class="op">=</span> <span class="fl">1e-3</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>reference <span class="op">=</span> linear_time_series(t, y, sample_time)</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>reference.name <span class="op">=</span> <span class="st">"reference"</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>reference.plot(ax<span class="op">=</span>ax, grid<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>fill_between(wave, reference, alpha<span class="op">=</span><span class="fl">0.2</span>)</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>plt.legend()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
@@ -368,140 +350,218 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+<p><code>comparison_series</code> and <code>comparison_df</code> calculate any error metric (default is <code>integral_abs_error</code>, i.e.&nbsp;area) for series and dataframes. Some metrics are defined in <code>trimes.metrics</code>. Further metrics from the <em>scikit-learn</em> package can be used.</p>
+<div id="69d49fa4" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> comparison_series, comparison_df</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.metrics <span class="im">import</span> integral_squared_error</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> root_mean_squared_error</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(comparison_series(wave, reference))</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(comparison_series(wave, reference, metric<span class="op">=</span>integral_squared_error))</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>df_waves <span class="op">=</span> pd.concat([wave, wave <span class="op">*</span> <span class="fl">0.1</span>], axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    comparison_df(</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>        df_waves, reference, metric<span class="op">=</span>root_mean_squared_error, sample_time<span class="op">=</span>sample_time</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>3.497905128845679
+0.00419286235447941
+[0.91582761 1.13841978]</code></pre>
+</div>
+</div>
 </section>
-<section id="check-boundaries" class="level2" data-number="2.2">
-<h2 data-number="2.2" class="anchored" data-anchor-id="check-boundaries"><span class="header-section-number">2.2</span> Check Boundaries</h2>
+<section id="boundaries-and-envelopes" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Boundaries and Envelopes</h1>
+<section id="create-boundaries-as-linear-time-series-signals" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="create-boundaries-as-linear-time-series-signals"><span class="header-section-number">3.1</span> Create Boundaries as Linear Time Series Signals</h2>
+<p>We will create boundaries and check whether a time series signal remains within the envelope and calculate error metrics.</p>
+<div id="1c7a1e4c" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> linear_time_series, mirror_y</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> (<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">5</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> (<span class="dv">2</span>, <span class="dv">2</span>, <span class="fl">1.5</span>, <span class="fl">1.2</span>, <span class="fl">1.2</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>sample_time <span class="op">=</span> <span class="fl">1e-3</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>ts <span class="op">=</span> linear_time_series(t, y, sample_time)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>ts_envelope <span class="op">=</span> mirror_y(ts, <span class="dv">1</span>, inplace<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>ts_envelope.columns <span class="op">=</span> (<span class="st">"upper boundary"</span>, <span class="st">"lower boundary"</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>ts_envelope.plot(grid<span class="op">=</span><span class="va">True</span>, linestyle<span class="op">=</span><span class="st">"--"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="time_series_comparison_files/figure-html/cell-9-output-1.png" width="579" height="429" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Create the periodic signal:</p>
+<div id="3ea15a6f" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> PeriodicSignal</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>signal <span class="op">=</span> PeriodicSignal(</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    np.arange(<span class="dv">0</span>, <span class="dv">5</span> <span class="op">+</span> sample_time, sample_time),</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    f<span class="op">=</span><span class="fl">0.5</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    offset<span class="op">=</span>(<span class="fl">1.5</span>, <span class="dv">1</span>),</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    mag<span class="op">=</span>(<span class="dv">2</span>, <span class="fl">0.01</span>),</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    phi<span class="op">=</span>np.pi <span class="op">/</span> <span class="dv">2</span>,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>wave <span class="op">=</span> signal.get_signal_series()</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>wave.name <span class="op">=</span> <span class="st">"wave"</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plt.subplot()</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>wave.plot(ax<span class="op">=</span>ax)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>ts_envelope.plot(ax<span class="op">=</span>ax, linestyle<span class="op">=</span><span class="st">"--"</span>)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>plt.grid()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="time_series_comparison_files/figure-html/cell-10-output-1.png" width="582" height="429" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="check-boundaries" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="check-boundaries"><span class="header-section-number">3.2</span> Check Boundaries</h2>
 <p><code>greater_than_series</code> and <code>smaller_than_series</code> compare the wave to the boundary and return a boolean array.</p>
-<div id="f39eff0f" class="cell" data-execution_count="7">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> greater_than_series</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>upper_boundary <span class="op">=</span> ts_envelope.iloc[:, <span class="dv">0</span>]</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>greater_than_series(wave, upper_boundary)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="7">
+<div id="2fac616b" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> greater_than_series</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>upper_boundary <span class="op">=</span> ts_envelope.iloc[:, <span class="dv">0</span>]</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>greater_than_series(wave, upper_boundary)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="10">
 <pre><code>array([False, False, False, ..., False, False, False])</code></pre>
 </div>
 </div>
 <p><code>apply_operator_series</code> can be used in a similar way using any suitable operator from the built-in <code>operator</code> module.</p>
-<div id="b660d318" class="cell" data-execution_count="8">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> operator</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> apply_operator_series</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>greater <span class="op">=</span> apply_operator_series(wave, ts_envelope.iloc[:, <span class="dv">0</span>], operator.gt)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>smaller <span class="op">=</span> apply_operator_series(wave, ts_envelope.iloc[:, <span class="dv">1</span>], operator.lt)</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plt.subplot()</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>wave.plot(ax<span class="op">=</span>ax)</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>ts_envelope.plot(ax<span class="op">=</span>ax, linestyle<span class="op">=</span><span class="st">"--"</span>)</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>fill_between(wave.iloc[greater], ts_envelope.iloc[greater, <span class="dv">0</span>], alpha<span class="op">=</span><span class="fl">0.5</span>)</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>fill_between(wave.iloc[smaller], ts_envelope.iloc[smaller, <span class="dv">1</span>], alpha<span class="op">=</span><span class="fl">0.5</span>)</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>plt.grid()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="117c3815" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> operator</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> apply_operator_series</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.plots <span class="im">import</span> fill_between</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>greater <span class="op">=</span> apply_operator_series(wave, ts_envelope.iloc[:, <span class="dv">0</span>], operator.gt)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>smaller <span class="op">=</span> apply_operator_series(wave, ts_envelope.iloc[:, <span class="dv">1</span>], operator.lt)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plt.subplot()</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>wave.plot(ax<span class="op">=</span>ax)</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>ts_envelope.plot(ax<span class="op">=</span>ax, linestyle<span class="op">=</span><span class="st">"--"</span>)</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>fill_between(wave.iloc[greater], ts_envelope.iloc[greater, <span class="dv">0</span>], alpha<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>fill_between(wave.iloc[smaller], ts_envelope.iloc[smaller, <span class="dv">1</span>], alpha<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>plt.grid()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_comparison_files/figure-html/cell-9-output-1.png" width="582" height="429" class="figure-img"></p>
+<p><img src="time_series_comparison_files/figure-html/cell-12-output-1.png" width="582" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>For convenience there is also a method that checks upper and lower boundary at once:</p>
-<div id="51b473d8" class="cell" data-execution_count="9">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> outside_envelope</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>outside_envelope(wave, ts_envelope)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="9">
+<div id="b4be510e" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> outside_envelope</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>outside_envelope(wave, ts_envelope)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="12">
 <pre><code>array([False, False, False, ..., False, False, False])</code></pre>
 </div>
 </div>
+<p>If you are interested in the time a condition is fullfilled (like a signal being outside an envelope), the <code>get_time_bool</code> function calculates the duration from a boolean array and the sampling time.</p>
+<div id="3c2575aa" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> get_time_bool</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>out <span class="op">=</span> outside_envelope(wave, ts_envelope)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>get_time_bool(out, ts_envelope.index.values)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="13">
+<pre><code>np.float64(2.1029999999999998)</code></pre>
+</div>
+</div>
 </section>
-<section id="calculate-metric" class="level2" data-number="2.3">
-<h2 data-number="2.3" class="anchored" data-anchor-id="calculate-metric"><span class="header-section-number">2.3</span> Calculate Metric</h2>
-<p>Next we calculate metrics such as the area where the wave exceeds the envelope. <code>comparison_series</code>/<code>comparison_df</code> calculate any error metric (default is <code>itegral_abs_error</code>, i.e.&nbsp;area) for series and dataframes. Some metrics are defined in <code>trimes.metrics</code>. Further metrics from the <em>scikit-learn</em> package can be used.</p>
-<div id="45162e5a" class="cell" data-execution_count="10">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> comparison_series, comparison_df</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.metrics <span class="im">import</span> integral_squared_error, integral_abs_error</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> root_mean_squared_error</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    comparison_series(</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        wave,</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        ts_envelope.iloc[:, <span class="dv">0</span>],</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>        operator.gt,</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    comparison_series(</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>        wave, ts_envelope.iloc[:, <span class="dv">1</span>], operator.lt, metric<span class="op">=</span>root_mean_squared_error</span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>df_waves <span class="op">=</span> pd.concat([wave, wave <span class="op">*</span> <span class="fl">1.1</span>], axis<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
-<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>    comparison_df(</span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>        df_waves,</span>
-<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>        ts_envelope.iloc[:, <span class="dv">0</span>],</span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>        operator.gt,</span>
-<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>        metric<span class="op">=</span>integral_abs_error,</span>
-<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="calculate-metric" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="calculate-metric"><span class="header-section-number">3.3</span> Calculate Metric</h2>
+<p>Next we calculate metrics such as the area where the wave exceeds the envelope. <code>comparison_series</code>/<code>comparison_df</code> accept an operator as input argument to consider only time spans where the condition is <code>True</code>.</p>
+<div id="f84c49a5" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> comparison_series, comparison_df</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.metrics <span class="im">import</span> integral_squared_error</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> root_mean_squared_error</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    comparison_series(</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>        wave,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>        ts_envelope.iloc[:, <span class="dv">0</span>],</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>        operator.gt,</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    comparison_series(</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>        wave, ts_envelope.iloc[:, <span class="dv">1</span>], operator.lt, metric<span class="op">=</span>root_mean_squared_error</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>df_waves <span class="op">=</span> pd.concat([wave, wave <span class="op">*</span> <span class="fl">1.1</span>], axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>    comparison_df(</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>        df_waves,</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>        ts_envelope.iloc[:, <span class="dv">0</span>],</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>        operator.gt,</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>        metric<span class="op">=</span>integral_squared_error,</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>0.6832649919854159
+<pre><code>0.6831283389870181
 0.07301156189253198
-[0.68326499 1.01496933]</code></pre>
+[0.00036097 0.00072013]</code></pre>
 </div>
 </div>
 <p>For convenience there are also methods for envelopes instead of a single boundary.</p>
-<div id="b54f32dc" class="cell" data-execution_count="11">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> envelope_comparison_series, envelope_comparison_df</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>envelope_comparison_series(wave, ts_envelope)</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>envelope_comparison_df(df_waves, ts_envelope)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="11">
-<pre><code>array([0.77815754, 1.11895373])</code></pre>
-</div>
-</div>
-<div id="56bb1d7b" class="cell" data-execution_count="12">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> envelope_comparison_df</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>envelope_comparison_df(pd.concat([wave, wave], axis<span class="op">=</span><span class="dv">1</span>), ts_envelope)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="12">
-<pre><code>array([0.77815754, 0.77815754])</code></pre>
+<div id="ab5a167d" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> envelope_comparison_series, envelope_comparison_df</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>envelope_comparison_series(wave, ts_envelope)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>envelope_comparison_df(df_waves, ts_envelope)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="15">
+<pre><code>array([0.77800191, 1.11872994])</code></pre>
 </div>
 </div>
 </section>
 </section>
-<section id="step-response-info" class="level1" data-number="3">
-<h1 data-number="3"><span class="header-section-number">3</span> Step Response Info</h1>
+<section id="step-response-info" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Step Response Info</h1>
 <p><em>trimes</em> provides an interface to the <em>control</em> package to get the step response info (overshoot etc.) of time series. Let’s first create a step response signal.</p>
-<div id="ddb1de0f" class="cell" data-execution_count="13">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> np.arange(<span class="dv">0</span>, <span class="dv">5</span> <span class="op">+</span> sample_time, sample_time)</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>offset <span class="op">=</span> <span class="dv">10</span> <span class="op">-</span> <span class="dv">5</span> <span class="op">*</span> np.exp(<span class="op">-</span>t)</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>step_response <span class="op">=</span> PeriodicSignal(</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    np.arange(<span class="dv">0</span>, <span class="dv">5</span> <span class="op">+</span> sample_time, sample_time),</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    f<span class="op">=</span><span class="dv">1</span>,</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    offset<span class="op">=</span>offset,</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    mag<span class="op">=</span>(<span class="dv">1</span>, <span class="fl">0.01</span>),</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    phi<span class="op">=</span>np.pi <span class="op">/</span> <span class="dv">2</span>,</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>step_series <span class="op">=</span> step_response.get_signal_series()</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>step_series.name <span class="op">=</span> <span class="st">"step response"</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>step_series.plot(grid<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>plt.legend()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="4560e94c" class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> np.arange(<span class="dv">0</span>, <span class="dv">5</span> <span class="op">+</span> sample_time, sample_time)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>offset <span class="op">=</span> <span class="dv">10</span> <span class="op">-</span> <span class="dv">5</span> <span class="op">*</span> np.exp(<span class="op">-</span>t)</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>step_response <span class="op">=</span> PeriodicSignal(</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    np.arange(<span class="dv">0</span>, <span class="dv">5</span> <span class="op">+</span> sample_time, sample_time),</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    f<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    offset<span class="op">=</span>offset,</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    mag<span class="op">=</span>(<span class="dv">1</span>, <span class="fl">0.01</span>),</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    phi<span class="op">=</span>np.pi <span class="op">/</span> <span class="dv">2</span>,</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>step_series <span class="op">=</span> step_response.get_signal_series()</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>step_series.name <span class="op">=</span> <span class="st">"step response"</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>step_series.plot(grid<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>plt.legend()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_comparison_files/figure-html/cell-14-output-1.png" width="566" height="429" class="figure-img"></p>
+<p><img src="time_series_comparison_files/figure-html/cell-17-output-1.png" width="566" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>Get the step response info. Note that the y-values in the results are relative to the initial value.</p>
-<div id="cd494d68" class="cell" data-execution_count="14">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.control <span class="im">import</span> step_info_series</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>info <span class="op">=</span> step_info_series(step_series)</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>info</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="14">
+<div id="00207e33" class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.control <span class="im">import</span> step_info_series</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>info <span class="op">=</span> step_info_series(step_series)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>info</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="17">
 <pre><code>{'RiseTime': np.float64(1.303),
  'SettlingTime': np.float64(4.405),
  'SettlingMin': np.float64(3.906303780009649),
@@ -514,19 +574,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>There is also a function to illustrate the results.</p>
-<div id="f212d3e6" class="cell" data-execution_count="15">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.control <span class="im">import</span> plot_step_info</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>step_series.plot(grid<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>plot_step_info(step_series, info)</span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>plt.legend()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="24a9c813" class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.control <span class="im">import</span> plot_step_info</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>step_series.plot(grid<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>plot_step_info(step_series, info)</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>plt.legend()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>4.896908976649615</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="time_series_comparison_files/figure-html/cell-16-output-2.png" width="566" height="429" class="figure-img"></p>
+<p><img src="time_series_comparison_files/figure-html/cell-19-output-2.png" width="566" height="429" class="figure-img"></p>
 </figure>
 </div>
 </div>
