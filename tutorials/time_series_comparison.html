@@ -199,7 +199,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#step-response-info" id="toc-step-response-info" class="nav-link" data-scroll-target="#step-response-info"><span class="header-section-number">3</span> Step Response Info</a></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes/edit/main/tutorials/time_series_comparison.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes/blob/main/tutorials/time_series_comparison.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li><li><a href="https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -227,7 +227,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="addition-and-subtraction" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Addition and Subtraction</h1>
 <p>First we create a time series with two curves between 0 and 5 seconds. The time samples are randomly varied (sample time is not constant). This could be for example results of simulations with an adaptive (variable) step solver. Note that there is a separate tutorial on signal generation.</p>
-<div id="92d521df" class="cell" data-execution_count="1">
+<div id="271e8939" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.append(<span class="vs">r"..\..\src"</span>)</span>
@@ -259,7 +259,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Next we create a reference signal with a different sampling time compared to above.</p>
-<div id="4fc259b3" class="cell" data-execution_count="2">
+<div id="a220b5bc" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>time <span class="op">=</span> np.linspace(t_start <span class="op">-</span> <span class="dv">1</span>, t_end <span class="op">+</span> <span class="dv">1</span>, <span class="dv">100</span>)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>sig_ref <span class="op">=</span> PeriodicSignal(time, mag<span class="op">=</span><span class="dv">1</span>, f<span class="op">=</span><span class="fl">0.3</span>, phi<span class="op">=-</span><span class="dv">2</span>)</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>series_reference <span class="op">=</span> sig_ref.get_signal_series()</span>
@@ -279,7 +279,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>We calculate the difference between signals ‘a’/‘b’ and the reference. Signals ‘a’/‘b’ are automatically resampled according to the reference, i.e.&nbsp;the option <code>resample_ts</code> is set to <code>True</code>. The option is available in most of the functions in the following but is set to <code>False</code> by default to avoid unnecessary resampling that deteriorates the performance.</p>
 <p>A diagram with two y-axes is used for visualization (original signals on the left axis, difference on the right). In addition, the area between ‘b’ and ‘reference’ is filled.</p>
-<div id="2d142dca" class="cell" data-execution_count="3">
+<div id="d3064223" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> subtract</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.plots <span class="im">import</span> plot_2y, fill_between</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -301,7 +301,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Addition works similar:</p>
-<div id="c22d6ae0" class="cell" data-execution_count="4">
+<div id="3fe72e5c" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> add</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="bu">sum</span> <span class="op">=</span> add(df_ts, series_reference, resample_ts<span class="op">=</span><span class="va">True</span>)</span>
@@ -323,7 +323,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="create-boundaries-as-linear-time-series-signals" class="level2" data-number="2.1">
 <h2 data-number="2.1" class="anchored" data-anchor-id="create-boundaries-as-linear-time-series-signals"><span class="header-section-number">2.1</span> Create Boundaries as Linear Time Series Signals</h2>
 <p>We will create boundaries and check whether a time series signal remains within the envelope and calculate error metrics.</p>
-<div id="2b644ff4" class="cell" data-execution_count="5">
+<div id="8f6e7bb7" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> linear_time_series, mirror_y</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> (<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">5</span>)</span>
@@ -342,7 +342,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Create the periodic signal:</p>
-<div id="e3af6aea" class="cell" data-execution_count="6">
+<div id="526013fa" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.signal_generation <span class="im">import</span> PeriodicSignal</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.plots <span class="im">import</span> fill_between</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -371,8 +371,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="check-boundaries" class="level2" data-number="2.2">
 <h2 data-number="2.2" class="anchored" data-anchor-id="check-boundaries"><span class="header-section-number">2.2</span> Check Boundaries</h2>
-<p><code>greater_than_series</code> and <code>smaller_than_series</code> compare the wave to the boundary and return a boolean array</p>
-<div id="313c265e" class="cell" data-execution_count="7">
+<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD <code>greater_than_series</code> and <code>smaller_than_series</code> compare the wave to the boundary and return a boolean array. ======= <code>greater_than_series</code> and <code>smaller_than_series</code> compare the wave to the boundary and return a boolean array &gt;&gt;&gt;&gt;&gt;&gt;&gt; main</p>
+<div id="bcc967f5" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> greater_than_series</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>upper_boundary <span class="op">=</span> ts_envelope.iloc[:, <span class="dv">0</span>]</span>
@@ -382,7 +382,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p><code>apply_operator_series</code> can be used in a similar way using any suitable operator from the built-in <code>operator</code> module.</p>
-<div id="352a777c" class="cell" data-execution_count="8">
+<div id="330168b6" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> operator</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> apply_operator_series</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -406,7 +406,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>For convenience there is also a method that checks upper and lower boundary at once:</p>
-<div id="50aa9e45" class="cell" data-execution_count="9">
+<div id="d13ca720" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> outside_envelope</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>outside_envelope(wave, ts_envelope)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -418,7 +418,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="calculate-metric" class="level2" data-number="2.3">
 <h2 data-number="2.3" class="anchored" data-anchor-id="calculate-metric"><span class="header-section-number">2.3</span> Calculate Metric</h2>
 <p>Next we calculate metrics such as the area where the wave exceeds the envelope. <code>comparison_series</code>/<code>comparison_df</code> calculate any error metric (default is <code>itegral_abs_error</code>, i.e.&nbsp;area) for series and dataframes. Some metrics are defined in <code>trimes.metrics</code>. Further metrics from the <em>scikit-learn</em> package can be used.</p>
-<div id="353ebb81" class="cell" data-execution_count="10">
+<div id="d49ee2ed" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> comparison_series, comparison_df</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.metrics <span class="im">import</span> integral_squared_error, integral_abs_error</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> root_mean_squared_error</span>
@@ -450,8 +450,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 [0.68326499 1.01496933]</code></pre>
 </div>
 </div>
-<p>For convenience there are also methods for envelopes instead of a single boundarie.</p>
-<div id="97a63d80" class="cell" data-execution_count="11">
+<p>For convenience there are also methods for envelopes instead of a single boundary.</p>
+<div id="a5ca73d0" class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> envelope_comparison_series, envelope_comparison_df</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>envelope_comparison_series(wave, ts_envelope)</span>
@@ -460,7 +460,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <pre><code>array([0.77815754, 1.11895373])</code></pre>
 </div>
 </div>
-<div id="981a2996" class="cell" data-execution_count="12">
+<div id="db44b0d3" class="cell" data-execution_count="12">
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.comparison <span class="im">import</span> envelope_comparison_df</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>envelope_comparison_df(pd.concat([wave, wave], axis<span class="op">=</span><span class="dv">1</span>), ts_envelope)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -473,7 +473,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="step-response-info" class="level1" data-number="3">
 <h1 data-number="3"><span class="header-section-number">3</span> Step Response Info</h1>
 <p><em>trimes</em> provides an interface to the <em>control</em> package to get the step response info (overshoot etc.) of time series. Let’s first create a step response signal.</p>
-<div id="aea53d65" class="cell" data-execution_count="13">
+<div id="f617cd07" class="cell" data-execution_count="13">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> np.arange(<span class="dv">0</span>, <span class="dv">5</span> <span class="op">+</span> sample_time, sample_time)</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>offset <span class="op">=</span> <span class="dv">10</span> <span class="op">-</span> <span class="dv">5</span> <span class="op">*</span> np.exp(<span class="op">-</span>t)</span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>step_response <span class="op">=</span> PeriodicSignal(</span>
@@ -496,7 +496,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Get the step response info. Note that the y-values in the results are relative to the initial value.</p>
-<div id="2d70c29b" class="cell" data-execution_count="14">
+<div id="828c5e74" class="cell" data-execution_count="14">
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.control <span class="im">import</span> step_info_series</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>info <span class="op">=</span> step_info_series(step_series)</span>
@@ -514,7 +514,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>There is also a function to illustrate the results.</p>
-<div id="991d290c" class="cell" data-execution_count="15">
+<div id="9eabf27b" class="cell" data-execution_count="15">
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> trimes.control <span class="im">import</span> plot_step_info</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>step_series.plot(grid<span class="op">=</span><span class="va">True</span>)</span>
@@ -973,4 +973,4 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes/edit/main/tutorials/time_series_comparison.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes/blob/main/tutorials/time_series_comparison.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li><li><a href="https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+</body></html>
