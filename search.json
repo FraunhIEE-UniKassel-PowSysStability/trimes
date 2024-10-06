@@ -1,0 +1,144 @@
+[
+  {
+    "objectID": "tutorials/time_series_generation.html",
+    "href": "tutorials/time_series_generation.html",
+    "title": "Time Series Generation",
+    "section": "",
+    "text": "This tutorial covers the generation of time series signals. It is shown how to create linear interpolated signals and periodic signals (superimposing several frequencies).\n\nimport sys\n\nsys.path.append(r\"..\\..\\src\")\n\nimport numpy as np\nfrom matplotlib import pyplot as plt\n\n\n1 Linear Signals\nLinear interpolated time series signals can be created by specifying points in time t and the corresponding values y:\n\nfrom trimes.signal_generation import linear_time_series\n\nt = (0, 2, 2, 3, 5)\ny = (2, 2, 1.5, 1.2, 1.2)\nsample_time = 1e-3\n\nts = linear_time_series(t, y, sample_time)\nts.plot(grid=True)\n\n\n\n\n\n\n\n\nIf y is a list, several lines are generated:\n\nt = (0, 2, 2, 3, 5)\ny = [(2, 2, 1.5, 1.2, 1.2), (0, 1, 1, 1, 1)]\n\nts = linear_time_series(t, y, sample_time)\nts.columns = (\"upper boundary\", \"lower boundary\")\nts.plot(grid=True)\n\n\n\n\n\n\n\n\nSymmetric signals can also be created using mirror_y (mirroring of the signal at a y-value):\n\nfrom trimes.signal_generation import mirror_y\n\nupper_boundary = ts.iloc[:, 0]\nts_envelope = mirror_y(upper_boundary, 1, inplace=True)\nts_envelope.columns = (\"upper boundary\", \"lower boundary\")\na = ts_envelope.plot(grid=True)\ntype(a)\n\nmatplotlib.axes._axes.Axes\n\n\n\n\n\n\n\n\n\n\n\n2 Periodic Signals\nThe PeriodicSignal class can be used to create periodic signals of any shape (flexibly set parameters like frequency, magnitude, offset and initial angle). By default, cosine signals are created:\n\nfrom trimes.signal_generation import PeriodicSignal\n\nsample_time = 1e-4\nmag = 110 * np.sqrt(2) / np.sqrt(3)\nt = np.arange(0, 0.1, sample_time)\ncosine_wave = PeriodicSignal(t, f=50, mag=mag, offset=10, phi=np.pi * 0.3)\ncosine_wave_series = cosine_wave.get_signal_series()\ncosine_wave_series.plot()\nplt.grid()\nplt.show()\n\n\n\n\n\n\n\n\nTo create gradients, use tuples as parameters (don’t use lists).\n\nplt.close(\"all\")\n\ncosine_wave = PeriodicSignal(\n    np.arange(0, 0.1, sample_time), f=(50, 150), mag=(0.9 * mag, 1.5 * mag)\n)\ncosine_wave.plot(grid=True)\n\n\n\n\n\n\n\n\nThe plot_with_attributes illustrates the signal as well as its parameters over time.\n\ncosine_wave.plot_with_attributes()\nplt.grid()\n\n\n\n\n\n\n\n\nSymmetric multi-phase signals can be created based on the PeriodicSignal class by using get_signal_n_phases (angular phase difference between signals is \\(360/n\\)):\n\ncosine_wave = PeriodicSignal(\n    np.arange(0, 0.1, sample_time), f=(50, 55), mag=(0.9 * mag, 1.1 * mag)\n)\ncosine_wave_series_3_phase = cosine_wave.get_signal_n_phases(3)\ncosine_wave_series_3_phase.plot(grid=True)\n\n\n\n\n\n\n\n\nSignals can be superimposed and concatenated by creating an array of signals. The rows of the array are superimposed and the resulting column is concatenated. The following signal is created: - two time periods (with varying frequencies) - 0-0.1 s - 0.1-0.2 s - several frequencies are superimposed: - fundamental: \\(50\\) Hz (actually varies between \\(50\\) and \\(52\\) Hz) - fifth harmonic: \\(5*50=250\\) Hz - negative sequence: rotating with \\(-50\\) Hz (actually varies between \\(-50\\) and \\(-52\\) Hz) - \\(3\\) phases\n\nfrom trimes.signal_generation import (\n    superimpose_and_concat_periodic_signals,\n)\n\ntime_spans = [np.arange(0, 0.1, sample_time), np.arange(0.1, 0.2, sample_time)]\nsignals = [\n    [\n        PeriodicSignal(time_spans[0], f=50, mag=mag),\n        PeriodicSignal(time_spans[0], f=5 * 50, mag=0.05 * mag),\n        PeriodicSignal(time_spans[0], f=-50, mag=0.03 * mag),\n    ],\n    [\n        PeriodicSignal(time_spans[1], f=(50, 52), mag=mag),\n        PeriodicSignal(time_spans[1], f=(50 * 5, 52 * 5), mag=0.05 * mag),\n        PeriodicSignal(time_spans[1], f=(-50, -52), mag=0.03 * mag),\n    ],\n]\nres = superimpose_and_concat_periodic_signals(\n    signals, angle_continuation=True, num_phases=3\n)\nres.plot()\nplt.grid()\n\n\n\n\n\n\n\n\nThe parameters of the signals can be exctracted using get_attributes_of_superimposed_and_concatenated_signals_over_time and illustrated:\n\nfrom trimes.signal_generation import (\n    get_attributes_of_superimposed_and_concatenated_signals_over_time,\n)\n\nattrs_of_columns = get_attributes_of_superimposed_and_concatenated_signals_over_time(\n    signals\n)\nattrs_of_columns[0].plot(title=\"fundamental\")\nplt.grid()\nattrs_of_columns[1].plot(title=\"harmonic\")\nplt.grid()\nattrs_of_columns[2].plot(title=\"negative sequence\")\nplt.grid()\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n Back to top",
+    "crumbs": [
+      "Tutorials",
+      "Time Series Generation"
+    ]
+  },
+  {
+    "objectID": "tutorials/overview.html",
+    "href": "tutorials/overview.html",
+    "title": "Overview",
+    "section": "",
+    "text": "The following tutorials illustrate the funtionality of trimes.\n\n1 Getting Started\nThis tutorial introduces the basic data structure of trimes. It covers basic concepts like (re-)sampling, interpolation and slicing.\n\n\n2 Time Series Comparison\nThis tutorial covers the comparison between time series signals and the calculation of metrics. Starting from simple subtraction, metrics like root mean squared error for upper and lower boundaries (envelope) are calculated. Finally, step response data is analyzed. The tutorial also illustrates some helper functions for plotting (e.g. fill between two time series).\n\n\n3 Time Series Generation\nThis tutorial covers the generation of time series signals. It is shown how to create linear interpolated signals and periodic signals (superimposing several frequencies).\n\n\n\n\n Back to top",
+    "crumbs": [
+      "Tutorials",
+      "Overview"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Trimes",
+    "section": "",
+    "text": "trimes (transient time series) is a python package for transient time series data in pandas format. The application is actually for all time series data where the time vector has a numerical format (e.g numpy’s float64) - as opposed to the frequently used DateTime format. To the best of our knowledge, there is currently no other python package focusing on transient time series data as described and the mentioned DateTime format is not convenient for transient time series.\ntrimes provides functionality for pandas DataFrames (in the format mentioned above) for the following use cases:\nand more.\nHave a look at the tutorials to get started."
+  },
+  {
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "Trimes",
+    "section": "Installation",
+    "text": "Installation\npip install trimes"
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "About this site\n\n\n\n Back to top"
+  },
+  {
+    "objectID": "tutorials/getting_started.html",
+    "href": "tutorials/getting_started.html",
+    "title": "Getting Started",
+    "section": "",
+    "text": "This tutorial introduces the basic data structure of trimes. It covers basic concepts like (re-)sampling, interpolation and slicing. Other tutorials cover more advanced applications.",
+    "crumbs": [
+      "Tutorials",
+      "Getting Started"
+    ]
+  },
+  {
+    "objectID": "tutorials/getting_started.html#get-samples",
+    "href": "tutorials/getting_started.html#get-samples",
+    "title": "Getting Started",
+    "section": "2.1 Get Samples",
+    "text": "2.1 Get Samples\nYou can get samples from a DataFrame using the index with the loc method. But the input must be exact. Hence, 0.0 is accepted and returns a pandas Series object because there is a sample at exactly that time. However, 0.55 will throw a key error.\n\ndf.loc[0.0]  # -&gt; ok, because `0.0` is in df.index\n# df.loc[0.55] -&gt; KeyError\n\na    0.0\nb    2.0\nName: 0.0, dtype: float64\n\n\nThe get_sample method of trimes returns a pandas Series object with the next sample after the queried time:\n\ntrimes.get_sample(df, 0.0)  # -&gt; same as df.loc[0.0]\ntrimes.get_sample(df, 0.55)\n\na    0.633518\nb    1.778536\nName: 0.5510013623686324, dtype: float64\n\n\nget_sample and get_sample_shifted accept multiple samples and then return a DataFrame. get_sample_shifted shifts the returned samples. For example the input -1 returns the samples before the sample time:\n\ntrimes.get_sample_shifted(df, [0.55, 2], -1)\n\n\n\n\n\n\n\n\na\nb\n\n\ntime\n\n\n\n\n\n\n0.549998\n0.632464\n1.779324\n\n\n1.998996\n1.298948\n-0.244573\n\n\n\n\n\n\n\nYou can also query samples around a point in time:\n\ntrimes.get_samples_around(df, 0.55, -1, 2)\n\n\n\n\n\n\n\n\na\nb\n\n\ntime\n\n\n\n\n\n\n0.549998\n0.632464\n1.779324\n\n\n0.551001\n0.633518\n1.778536\n\n\n0.552003\n0.634570\n1.777747\n\n\n\n\n\n\n\nThis returns the samples from -1 to 2 (relative to first sample after 0.55).\nThese methods work with DataFrames as well as with Series:\n\ntrimes.get_samples_around(df[\"a\"], 0.55, -1, 2)\n\ntime\n0.549998    0.632464\n0.551001    0.633518\n0.552003    0.634570\nName: a, dtype: float64\n\n\nWhereas get_sample returns the values, get_index returns their index (index of first sample after point in time):\n\nindex = trimes.get_index(df, 0.55)\n# Then iloc can be used\ndf.iloc[index]\n\na    0.633518\nb    1.778536\nName: 0.5510013623686324, dtype: float64",
+    "crumbs": [
+      "Tutorials",
+      "Getting Started"
+    ]
+  },
+  {
+    "objectID": "tutorials/getting_started.html#interpolation",
+    "href": "tutorials/getting_started.html#interpolation",
+    "title": "Getting Started",
+    "section": "2.2 Interpolation",
+    "text": "2.2 Interpolation\ninterp_df returns a DataFrame with interpolated (linear) values:\n\ntrimes.interp_df(df, [0.5, 3])\n\n\n\n\n\n\n\n\na\nb\n\n\n\n\n0.5\n0.579259\n1.816955\n\n\n3.0\n0.705762\n-1.494839\n\n\n\n\n\n\n\ninterp_df returns a DataFrame even if there is only one sample. You can use squeeze to get a Series object:\n\ntrimes.interp_df(df, [0.5]).squeeze(axis=0)\n\na    0.579259\nb    1.816955\nName: 0.5, dtype: float64\n\n\ninterp_series does the same with Series input and returns an array:\n\ntrimes.interp_series(df[\"b\"], [0.5, 0.7])\n\n0.5    1.816955\n0.7    1.647175\ndtype: float64",
+    "crumbs": [
+      "Tutorials",
+      "Getting Started"
+    ]
+  },
+  {
+    "objectID": "tutorials/getting_started.html#slicing",
+    "href": "tutorials/getting_started.html#slicing",
+    "title": "Getting Started",
+    "section": "2.3 Slicing",
+    "text": "2.3 Slicing\nThe loc method of pandas works with slices even if the input time does not fit with the samples (9.5 is not in time):\n\ndf.loc[9.5:10]\n\n\n\n\n\n\n\n\na\nb\n\n\ntime\n\n\n\n\n\n\n9.501003\n0.870084\n-0.063874\n\n\n9.502004\n0.869021\n-0.064049\n\n\n9.503003\n0.867961\n-0.064223\n\n\n9.504002\n0.866900\n-0.064397\n\n\n9.504996\n0.865845\n-0.064570\n\n\n...\n...\n...\n\n\n9.994995\n0.369899\n-0.085584\n\n\n9.996001\n0.368969\n-0.085502\n\n\n9.997003\n0.368042\n-0.085419\n\n\n9.997996\n0.367126\n-0.085337\n\n\n10.000000\n0.365276\n-0.085169\n\n\n\n\n499 rows × 2 columns\n\n\n\nThe method get_between of trimes works similar and is more performant. Note that one difference between loc and get_between is that get_between returns samples before the last time sample (in this case before 10).\n\ntrimes.get_between(df, 9.5, 10)\n\n\n\n\n\n\n\n\na\nb\n\n\ntime\n\n\n\n\n\n\n9.501003\n0.870084\n-0.063874\n\n\n9.502004\n0.869021\n-0.064049\n\n\n9.503003\n0.867961\n-0.064223\n\n\n9.504002\n0.866900\n-0.064397\n\n\n9.504996\n0.865845\n-0.064570\n\n\n...\n...\n...\n\n\n9.994004\n0.370816\n-0.085665\n\n\n9.994995\n0.369899\n-0.085584\n\n\n9.996001\n0.368969\n-0.085502\n\n\n9.997003\n0.368042\n-0.085419\n\n\n9.997996\n0.367126\n-0.085337\n\n\n\n\n498 rows × 2 columns\n\n\n\n\n%timeit df.loc[9.5:10]\n%timeit trimes.get_between(df, 9.5, 10)\n\n22.3 μs ± 1.42 μs per loop (mean ± std. dev. of 7 runs, 10,000 loops each)\n14.5 μs ± 395 ns per loop (mean ± std. dev. of 7 runs, 100,000 loops each)\n\n\ntrimes is more performant because it assumes that the index (time) is monotonously increasing and uses numpy’s searchsorted function under the hood.",
+    "crumbs": [
+      "Tutorials",
+      "Getting Started"
+    ]
+  },
+  {
+    "objectID": "tutorials/getting_started.html#delta-between-samples",
+    "href": "tutorials/getting_started.html#delta-between-samples",
+    "title": "Getting Started",
+    "section": "2.4 Delta Between Samples",
+    "text": "2.4 Delta Between Samples\nget_delta returns the difference between two samples (under the hood, get_sample is used, so the the next sample after the given time is used).\n\ntrimes.get_delta(df, 0, 0.5)\n\na    0.580335\nb   -0.183765\ndtype: float64\n\n\nOne can also query the delta between interpolated (linear) values:\n\ndelta = trimes.get_delta_interp_df(df, 0, 0.5)\nprint(delta)\ntrimes.get_delta_interp_series(df[\"a\"], 0, 0.5)\n\na    0.579259\nb   -0.183045\ndtype: float64\n\n\nnp.float64(0.5792589541779403)\n\n\nget_delta_shift returns the delta between samples around a point in time, in this case between sample 2 before 0.1 and one sample after 0.1:\n\ntrimes.get_delta_shift(df, 0.1, -2, 0)\n\na    0.002390\nb   -0.000295\ndtype: float64\n\n\n\ntrimes.get_delta_interp_df(df, 0, 0.5)\n\na    0.579259\nb   -0.183045\ndtype: float64",
+    "crumbs": [
+      "Tutorials",
+      "Getting Started"
+    ]
+  },
+  {
+    "objectID": "tutorials/time_series_comparison.html",
+    "href": "tutorials/time_series_comparison.html",
+    "title": "Time Series Comparison",
+    "section": "",
+    "text": "This tutorial covers the comparison between time series signals and the calculation of metrics. Starting from simple subtraction, metrics like root mean squared error for upper and lower boundaries (envelope) are calculated. Finally, step response data is analyzed. The tutorial also illustrates some helper functions for plotting (e.g. fill between two time series).",
+    "crumbs": [
+      "Tutorials",
+      "Time Series Comparison"
+    ]
+  },
+  {
+    "objectID": "tutorials/time_series_comparison.html#create-boundaries-as-linear-time-series-signals",
+    "href": "tutorials/time_series_comparison.html#create-boundaries-as-linear-time-series-signals",
+    "title": "Time Series Comparison",
+    "section": "2.1 Create Boundaries as Linear Time Series Signals",
+    "text": "2.1 Create Boundaries as Linear Time Series Signals\nWe will create boundaries and check whether a time series signal remains within the envelope and calculate error metrics.\n\nfrom trimes.signal_generation import linear_time_series, mirror_y\n\nt = (0, 2, 3, 3, 5)\ny = (2, 2, 1.5, 1.2, 1.2)\nsample_time = 1e-3\nts = linear_time_series(t, y, sample_time)\nts_envelope = mirror_y(ts, 1, inplace=True)\nts_envelope.columns = (\"upper boundary\", \"lower boundary\")\nts_envelope.plot(grid=True, linestyle=\"--\")\n\n\n\n\n\n\n\n\nCreate the periodic signal:\n\nfrom trimes.signal_generation import PeriodicSignal\nfrom trimes.plots import fill_between\n\nsignal = PeriodicSignal(\n    np.arange(0, 5 + sample_time, sample_time),\n    f=0.5,\n    offset=(1.5, 1),\n    mag=(2, 0.01),\n    phi=np.pi / 2,\n)\nwave = signal.get_signal_series()\nwave.name = \"wave\"\nax = plt.subplot()\nwave.plot(ax=ax)\nts_envelope.plot(ax=ax, linestyle=\"--\")\nplt.legend()\nplt.grid()",
+    "crumbs": [
+      "Tutorials",
+      "Time Series Comparison"
+    ]
+  },
+  {
+    "objectID": "tutorials/time_series_comparison.html#check-boundaries",
+    "href": "tutorials/time_series_comparison.html#check-boundaries",
+    "title": "Time Series Comparison",
+    "section": "2.2 Check Boundaries",
+    "text": "2.2 Check Boundaries\ngreater_than_series and smaller_than_series compare the wave to the boundary and return a boolean array\n\nfrom trimes.comparison import greater_than_series\n\nupper_boundary = ts_envelope.iloc[:, 0]\ngreater_than_series(wave, upper_boundary)\n\narray([False, False, False, ..., False, False, False])\n\n\napply_operator_series can be used in a similar way using any suitable operator from the built-in operator module.\n\nimport operator\nfrom trimes.comparison import apply_operator_series\n\ngreater = apply_operator_series(wave, ts_envelope.iloc[:, 0], operator.gt)\nsmaller = apply_operator_series(wave, ts_envelope.iloc[:, 1], operator.lt)\n\nax = plt.subplot()\nwave.plot(ax=ax)\n\nts_envelope.plot(ax=ax, linestyle=\"--\")\nfill_between(wave.iloc[greater], ts_envelope.iloc[greater, 0], alpha=0.5)\nfill_between(wave.iloc[smaller], ts_envelope.iloc[smaller, 1], alpha=0.5)\nplt.legend()\nplt.grid()\n\n\n\n\n\n\n\n\nFor convenience there is also a method that checks upper and lower boundary at once:\n\nfrom trimes.comparison import outside_envelope\n\noutside_envelope(wave, ts_envelope)\n\narray([False, False, False, ..., False, False, False])",
+    "crumbs": [
+      "Tutorials",
+      "Time Series Comparison"
+    ]
+  },
+  {
+    "objectID": "tutorials/time_series_comparison.html#calculate-metric",
+    "href": "tutorials/time_series_comparison.html#calculate-metric",
+    "title": "Time Series Comparison",
+    "section": "2.3 Calculate Metric",
+    "text": "2.3 Calculate Metric\nNext we calculate metrics such as the area where the wave exceeds the envelope. comparison_series/comparison_df calculate any error metric (default is itegral_abs_error, i.e. area) for series and dataframes. Some metrics are defined in trimes.metrics. Further metrics from the scikit-learn package can be used.\n\nfrom trimes.comparison import comparison_series, comparison_df\nfrom trimes.metrics import integral_squared_error, integral_abs_error\nfrom sklearn.metrics import root_mean_squared_error\n\nprint(\n    comparison_series(\n        wave,\n        ts_envelope.iloc[:, 0],\n        operator.gt,\n    )\n)\nprint(\n    comparison_series(\n        wave, ts_envelope.iloc[:, 1], operator.lt, metric=root_mean_squared_error\n    )\n)\ndf_waves = pd.concat([wave, wave * 1.1], axis=1)\nprint(\n    comparison_df(\n        df_waves,\n        ts_envelope.iloc[:, 0],\n        operator.gt,\n        metric=integral_abs_error,\n    )\n)\n\n0.6832649919854159\n0.07301156189253198\n[0.68326499 1.01496933]\n\n\nFor convenience there are also methods for envelopes instead of a single boundarie.\n\nfrom trimes.comparison import envelope_comparison_series, envelope_comparison_df\n\nenvelope_comparison_series(wave, ts_envelope)\nenvelope_comparison_df(df_waves, ts_envelope)\n\narray([0.77815754, 1.11895373])\n\n\n\nfrom trimes.comparison import envelope_comparison_df\n\nenvelope_comparison_df(pd.concat([wave, wave], axis=1), ts_envelope)\n\narray([0.77815754, 0.77815754])",
+    "crumbs": [
+      "Tutorials",
+      "Time Series Comparison"
+    ]
+  }
+]
