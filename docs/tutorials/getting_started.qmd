@@ -8,7 +8,6 @@ format:
 ---
 
 
-
 This tutorial introduces the basic data structure of *trimes*. It covers basic concepts like (re-)sampling, interpolation and slicing. Other tutorials cover more advanced applications.
 
 # Data Structure

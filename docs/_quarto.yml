@@ -12,11 +12,10 @@ website:
   repo-actions: [edit, source, issue]
   navbar:
     left:
-      - href: index.qmd
-        text: Home
-      - about.qmd
+      - text: Home
+        href: index.qmd
       - text: Tutorials
-        href: tutorials.qmd 
+        href: tutorials/overview.qmd 
     tools:
       - icon: github
         href: https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes  
@@ -24,7 +23,7 @@ website:
     - title: "Tutorials"
       style: "docked"
       contents:
-        - tutorials.qmd
+        - tutorials/overview.qmd
         - tutorials/getting_started.qmd
         - tutorials/time_series_comparison.qmd
         - tutorials/time_series_generation.qmd
