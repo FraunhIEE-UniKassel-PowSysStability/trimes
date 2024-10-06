@@ -4,3 +4,6 @@ dist
 src/trimes/__pycache__
 tests/__pycache__
 venv/
+/.quarto/
+/_site/
+/_freeze/
