@@ -131,6 +131,7 @@ def superimpose_and_concat_periodic_signals(
     Examples:
         Define array of PeriodicSignals. Rows will be superimposed and the resulting column will be concatenated:
 
+        ```
         step_size = 1e-3
         signals = [
             [
@@ -146,8 +147,8 @@ def superimpose_and_concat_periodic_signals(
                 PeriodicSignal(np.arange(0.3, 0.5, step_size), f=9*50, mag=0.06),
             ],
         ]
-
         res = concat_periodic_signals(signals, num_phases = 3)
+        ```
     """
     phase_signals = [None] * num_phases
     for phase in range(num_phases):

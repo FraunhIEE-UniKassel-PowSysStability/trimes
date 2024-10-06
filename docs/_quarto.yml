@@ -1,0 +1,43 @@
+project:
+  type: website
+
+metadata-files:
+  - _sidebar.yml
+  
+website:
+  title: "trimes"
+  page-navigation: true
+  back-to-top-navigation: true
+  repo-url: https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes
+  repo-actions: [edit, source, issue]
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - about.qmd
+      - text: Tutorials
+        href: tutorials.qmd 
+    tools:
+      - icon: github
+        href: https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes  
+  sidebar:
+    - title: "Tutorials"
+      style: "docked"
+      contents:
+        - tutorials.qmd
+        - tutorials/getting_started.qmd
+        - tutorials/time_series_comparison.qmd
+        - tutorials/time_series_generation.qmd
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    
+execute:
+      freeze: auto  # re-render only when source changes
+
+theme:
+  light: flatly
+  dark: darkly
+
