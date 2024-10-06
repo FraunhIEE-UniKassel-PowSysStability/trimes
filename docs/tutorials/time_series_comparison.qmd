@@ -122,11 +122,7 @@ plt.grid()
 ```
 
 ## Check Boundaries
-<<<<<<< HEAD
 `greater_than_series` and `smaller_than_series` compare the wave to the boundary and return a boolean array.
-=======
-`greater_than_series` and `smaller_than_series` compare the wave to the boundary and return a boolean array
->>>>>>> main
 
 ```{python}
 from trimes.comparison import greater_than_series
