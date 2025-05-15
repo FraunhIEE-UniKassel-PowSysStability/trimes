@@ -291,3 +291,37 @@ def mirror_y(ts: pd.Series, y: float, inplace=False):
         return ts
     else:
         return mirrored_y
+
+
+def create_discrete_steps_for_interpolated_time_series(
+    t: np.array, val: np.array, delta_t: float = 1e-6, name="0"
+) -> pd.Series:
+    """Create a time series that approximates discrete value steps with samples that are close in time.
+
+    E.g. a step in 'val' at time 't' from 0 to 1 is approximated with two samples at 't - delta_t' ('val=0') and 't' ('val=1'), where 'delta_t' is a small value (e.g. 1e-6).
+
+    Args:
+        t (np.array): time of discrete steps
+        val (np.array): New value at discrete steps 't'
+        delta_t (float, optional): time difference at discrete steps. Defaults to 1e-6.
+        name (str, optional): label in pandas series. Defaults to "0".
+
+    Returns:
+        pd.Series: time series with discrete steps
+    """
+    num_time_steps = len(t)
+    time_ticks_for_interpolation = np.empty(num_time_steps * 2 - 1, dtype=float)
+    values_for_interpolation = np.empty(num_time_steps * 2 - 1, dtype=float)
+    for idx in range(num_time_steps - 1):
+        idx2 = idx * 2
+        values_for_interpolation[idx2 : idx2 + 2] = [val[idx], val[idx]]
+        time_ticks_for_interpolation[idx2 : idx2 + 2] = [
+            t[idx],
+            t[idx + 1] - delta_t,
+        ]
+    time_ticks_for_interpolation[-1] = t[-1]
+    values_for_interpolation[-1] = val[-1]
+    ts = pd.Series(values_for_interpolation, index=time_ticks_for_interpolation)
+    ts.name = name
+    ts.index.name = "time"
+    return ts
