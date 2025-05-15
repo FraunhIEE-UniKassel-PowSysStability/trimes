@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from icecream import ic
 
-from trimes.base import superpose_series, get_index, to_numpy_array
+from trimes.base import superpose_series, get_index
 
 
 class PeriodicSignal:
@@ -271,20 +271,20 @@ def get_interpolated(
     return ts
 
 
-def mirror_y(ts: pd.Series, y: float, inplace=False):
+def mirror_y(ts: pd.Series, y: float, inplace=False) -> pd.DataFrame | pd.Series:
     """Mirror 'ts' at 'y'.
 
     Args:
         ts (pd.Series): time series
 
-        y (float): y (horizontal line for mirroring)
+        y (float): y (value of horizontal line for mirroring)
 
-        inplace (bool, optional): If True the mirored signal is added to 'ts' and a DataFrame is returned. Defaults to False (only mirrored signal series is returned).
+        inplace (bool, optional): If True the mirrored signal is added to 'ts' and a DataFrame is returned. Defaults to False (only mirrored signal series is returned).
 
     Returns:
-        _type_: _description_
+        pd.DataFrame | pd.Series: Mirrored series or frame
     """
-    mirrored_y = y - (ts - y)
+    mirrored_y = 2 * y - ts
     if inplace:
         ts = ts.to_frame()
         ts[1] = mirrored_y
