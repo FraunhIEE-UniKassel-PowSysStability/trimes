@@ -8,6 +8,7 @@ format:
 jupyter: python3
 ---
 
+
 ```{python}
 #| echo: false
 #| output: false
@@ -153,8 +154,14 @@ trimes.get_between(df, 9.5, 10)
 
 *trimes* is more performant because it assumes that the index (time) is monotonously increasing and uses numpy's `searchsorted` function under the hood.
 
+The function 'get_between_and_around' includes the samples before and after the time range (or at the exact points in time).
+
+```{python}
+trimes.get_between_and_around(df, 9.5, 10)
+```
+
 ## Delta Between Samples
-`get_delta` returns the difference between two samples (under the hood, `get_sample` is used, so the the next sample after the given time is used).
+`get_delta` returns the difference between two samples (under the hood `get_sample` is used, so the the next sample after the given time is used).
 
 ```{python}
 trimes.get_delta(df, 0, 0.5)
@@ -172,10 +179,6 @@ trimes.get_delta_interp_series(df["a"], 0, 0.5)
 
 ```{python}
 trimes.get_delta_shift(df, 0.1, -2, 0)
-```
-
-```{python}
-trimes.get_delta_interp_df(df, 0, 0.5)
 ```
 
 # Resampling
