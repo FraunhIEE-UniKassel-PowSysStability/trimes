@@ -77,7 +77,6 @@ def get_metric_np(
         reference = np.broadcast_to(reference, (ts.ndim, len(sample_weight))).T
     else:
         multioutput = "uniform_average"
-    # return None
     return metric(
         reference, ts, sample_weight=sample_weight, multioutput=multioutput, **kwargs
     )
