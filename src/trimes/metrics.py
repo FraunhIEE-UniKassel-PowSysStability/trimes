@@ -133,8 +133,20 @@ def integral_squared_error(
     return _handle_sklearn_multioutput(multioutput, integrated_error)
 
 
-def _weighted_error(y_true, y_pred, sample_weight):
-    return (y_pred - y_true) * sample_weight[:, np.newaxis]
+def _weighted_error(
+    y_true: ArrayLike, y_pred: ArrayLike, sample_weight: ArrayLike
+) -> ArrayLike:
+    """Weighte error (difference) between 'y_pred' and 'y_true'.
+
+    Args:
+        y_true (ArrayLike): dimension (n,)
+        y_pred (ArrayLike): dimension (n,) or (n,m)
+        sample_weight (ArrayLike): dimension (n,)
+
+    Returns:
+        ArrayLike: dimension (n,) or (n,m)
+    """
+    return ((y_pred - y_true).T * sample_weight).T
 
 
 def _handle_sklearn_multioutput(

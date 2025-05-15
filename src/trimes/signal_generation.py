@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from icecream import ic
 
-from trimes.base import superpose_series, get_index, to_numpy_array
+from trimes.base import superpose_series, get_index
 
 
 class PeriodicSignal:
@@ -271,23 +271,57 @@ def get_interpolated(
     return ts
 
 
-def mirror_y(ts: pd.Series, y: float, inplace=False):
+def mirror_y(ts: pd.Series, y: float, inplace=False) -> pd.DataFrame | pd.Series:
     """Mirror 'ts' at 'y'.
 
     Args:
         ts (pd.Series): time series
 
-        y (float): y (horizontal line for mirroring)
+        y (float): y (value of horizontal line for mirroring)
 
-        inplace (bool, optional): If True the mirored signal is added to 'ts' and a DataFrame is returned. Defaults to False (only mirrored signal series is returned).
+        inplace (bool, optional): If True the mirrored signal is added to 'ts' and a DataFrame is returned. Defaults to False (only mirrored signal series is returned).
 
     Returns:
-        _type_: _description_
+        pd.DataFrame | pd.Series: Mirrored series or frame
     """
-    mirrored_y = y - (ts - y)
+    mirrored_y = 2 * y - ts
     if inplace:
         ts = ts.to_frame()
         ts[1] = mirrored_y
         return ts
     else:
         return mirrored_y
+
+
+def create_discrete_steps_for_interpolated_time_series(
+    t: np.array, val: np.array, delta_t: float = 1e-6, name="0"
+) -> pd.Series:
+    """Create a time series that approximates discrete value steps with samples that are close in time.
+
+    E.g. a step in 'val' at time 't' from 0 to 1 is approximated with two samples at 't - delta_t' ('val=0') and 't' ('val=1'), where 'delta_t' is a small value (e.g. 1e-6).
+
+    Args:
+        t (np.array): time of discrete steps
+        val (np.array): New value at discrete steps 't'
+        delta_t (float, optional): time difference at discrete steps. Defaults to 1e-6.
+        name (str, optional): label in pandas series. Defaults to "0".
+
+    Returns:
+        pd.Series: time series with discrete steps
+    """
+    num_time_steps = len(t)
+    time_ticks_for_interpolation = np.empty(num_time_steps * 2 - 1, dtype=float)
+    values_for_interpolation = np.empty(num_time_steps * 2 - 1, dtype=float)
+    for idx in range(num_time_steps - 1):
+        idx2 = idx * 2
+        values_for_interpolation[idx2 : idx2 + 2] = [val[idx], val[idx]]
+        time_ticks_for_interpolation[idx2 : idx2 + 2] = [
+            t[idx],
+            t[idx + 1] - delta_t,
+        ]
+    time_ticks_for_interpolation[-1] = t[-1]
+    values_for_interpolation[-1] = val[-1]
+    ts = pd.Series(values_for_interpolation, index=time_ticks_for_interpolation)
+    ts.name = name
+    ts.index.name = "time"
+    return ts

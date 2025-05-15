@@ -21,7 +21,7 @@ def step_info_series(
 
         yinitial (float | None, optional): Initial value before step. Defaults to None (first value in 'ts' is used).
 
-        yinitial (float | None, optional): Final steady state value after step. Defaults to None (last value in 'ts' is used).
+        yfinal (float | None, optional): Final steady state value after step. Defaults to None (last value in 'ts' is used).
 
         kwargs: kwargs for control.step_info
 

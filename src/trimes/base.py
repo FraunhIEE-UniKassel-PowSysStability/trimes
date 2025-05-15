@@ -264,7 +264,3 @@ def create_pandas_series_or_frame_with_same_columns_and_index(
 
 def superpose_series(series: list[pd.Series]):
     return pd.concat(series, axis=1).sum(axis=1)
-
-
-def to_numpy_array(*args):
-    return [np.array(x) for x in args]

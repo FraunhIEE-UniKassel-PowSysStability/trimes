@@ -124,16 +124,12 @@ from trimes.comparison import comparison_series, comparison_df
 from trimes.metrics import integral_squared_error
 from sklearn.metrics import root_mean_squared_error
 
-
-
 print(comparison_series(wave, reference))
 print(comparison_series(wave, reference, metric=integral_squared_error))
-
 
 df_waves = pd.concat([wave, wave * 0.1], axis=1)
 print(
     comparison_df(
-
         df_waves, reference, metric=root_mean_squared_error, sample_time=sample_time
     )
 )
