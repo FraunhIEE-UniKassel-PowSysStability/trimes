@@ -18,6 +18,7 @@ def subtract(
     reference: pd.Series | pd.DataFrame,
     extend: bool = False,
     resample_ts: bool = False,
+    resample_reference: bool = False,
 ) -> pd.Series | pd.DataFrame:
     """Difference between 'ts' and 'reference' (subtract 'reference' from 'ts').
 
@@ -30,13 +31,16 @@ def subtract(
 
         resample_ts (bool): If True, 'ts' is resampled with the index of 'reference'. If False, the sampling time of 'ts' and 'reference' must be equal. Defaults to False.
 
+        resample_reference (bool, optional): If True, 'reference' wil be resampled according to 'ts'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
+
     Returns:
         pd.Series | pd.DataFrame: difference
     """
     if not extend:
         reference = _avoid_extension(ts, reference)
-    if resample_ts:
-        ts = resample(ts, reference.index.values)
+    ts, reference = _align_sample_time_of_ts_and_reference(
+        ts, reference, resample_ts, resample_reference
+    )
     return ts.sub(reference, axis=0)
 
 
@@ -45,11 +49,13 @@ def add(
     reference: pd.Series | pd.DataFrame,
     extend: bool = False,
     resample_ts: bool = False,
+    resample_reference: bool = False,
 ) -> pd.Series | pd.DataFrame:
     if not extend:
         reference = _avoid_extension(ts, reference)
-    if resample_ts:
-        ts = resample(ts, reference.index.values)
+    ts, reference = _align_sample_time_of_ts_and_reference(
+        ts, reference, resample_ts, resample_reference
+    )
     return ts.add(reference, axis=0)
 
 
@@ -64,10 +70,24 @@ def _avoid_extension(ts, reference):
     return reference
 
 
+def _align_sample_time_of_ts_and_reference(
+    ts, reference, resample_ts: bool, resample_reference: bool
+):
+    if resample_ts:
+        ts = resample(ts, reference.index.values)
+    elif resample_reference:
+        reference = resample(reference, ts.index.values)
+    return ts, reference
+
+
 def apply_operator_series(
-    ts: pd.Series, reference: pd.Series, operator: Callable, resample_ts: bool = False
+    ts: pd.Series,
+    reference: pd.Series,
+    operator: Callable,
+    resample_ts: bool = False,
+    resample_reference: bool = False,
 ) -> np.array:
-    """Apply operator (e.g. gretaer than/less than) to series.
+    """Apply operator (e.g. greater than/less than) to series.
 
     Args:
         ts (pd.Series): time series
@@ -78,11 +98,14 @@ def apply_operator_series(
 
         resample_ts (bool, optional): resample_ts (bool, optional): If True, 'ts' wil be resampled according to 'reference'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
 
+        resample_reference (bool, optional): If True, 'reference' wil be resampled according to 'ts'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
+
     Returns:
         np.array: boolean
     """
-    if resample_ts:
-        ts = resample(ts, reference.index.values)
+    ts, reference = _align_sample_time_of_ts_and_reference(
+        ts, reference, resample_ts, resample_reference
+    )
     return operator(ts.to_numpy(), reference.to_numpy())
 
 
@@ -91,10 +114,12 @@ def apply_operator_df(
     reference: pd.Series,
     operator: Callable,
     resample_ts: bool = False,
+    resample_reference: bool = False,
 ) -> np.array:
     """Apply operator (e.g. gretaer than/less than) to DataFrame. See 'apply_operator_series'."""
-    if resample_ts:
-        ts = resample(ts, reference.index.values)
+    ts, reference = _align_sample_time_of_ts_and_reference(
+        ts, reference, resample_ts, resample_reference
+    )
     reference_np = reference.to_numpy()
     ts_np = ts.to_numpy()
     return np.transpose([operator(col, reference_np) for col in ts_np.T])
@@ -113,7 +138,10 @@ def less_than_series(
 
 
 def outside_envelope(
-    ts: pd.Series, envelope: pd.DataFrame, resample_ts: bool = False
+    ts: pd.Series,
+    envelope: pd.DataFrame,
+    resample_ts: bool = False,
+    resample_envelope: bool = False,
 ) -> np.array:
     """Get samples that are outside envelope.
 
@@ -124,11 +152,14 @@ def outside_envelope(
 
         resample_ts (bool, optional): If True, 'ts' wil be resampled according to 'reference'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
 
+        resample_envelope (bool, optional): If True, 'envelope' wil be resampled according to 'ts'. Defaults to False (sampling time of 'ts' and 'envelope' must be equal).
+
     Returns:
         np.array: boolean array
     """
-    if resample_ts:
-        ts = resample(ts, envelope.index.values)
+    ts, envelope = _align_sample_time_of_ts_and_reference(
+        ts, envelope, resample_ts, resample_envelope
+    )
     greater = apply_operator_series(ts, envelope.iloc[:, 0], operator.gt)
     smaller = apply_operator_series(ts, envelope.iloc[:, 1], operator.lt)
     return np.logical_or(greater, smaller)
@@ -160,6 +191,7 @@ def comparison_series(
     metric: Callable = integral_abs_error,
     sample_time: float | ArrayLike | None = None,
     resample_ts: bool = False,
+    resample_reference: bool = False,
 ) -> np.float64:
     """Compare time series to a reference (and calculate error metric).
 
@@ -176,11 +208,14 @@ def comparison_series(
 
         resample_ts (bool, optional): If True, 'ts' wil be resampled according to 'reference'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
 
+        resample_reference (bool, optional): If True, 'reference' wil be resampled according to 'ts'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
+
     Returns:
         np.float64: results of metric
     """
-    if resample_ts:
-        ts = resample(ts, reference.index.values)
+    ts, reference = _align_sample_time_of_ts_and_reference(
+        ts, reference, resample_ts, resample_reference
+    )
     if operator_or_bool is not None:
         if isinstance(operator_or_bool, Callable):
             mask = apply_operator_series(
@@ -206,11 +241,13 @@ def comparison_df(
     operator_or_bool: Callable = None,
     metric: Callable = integral_abs_error,
     resample_ts: bool = False,
+    resample_reference: bool = False,
     sample_time: float | ArrayLike | None = None,
 ) -> ArrayLike:
     """Compare time series to a reference (and calculate error metric). See 'comparison_series'."""
-    if resample_ts:
-        ts = resample(ts, reference.index.values)
+    ts, reference = _align_sample_time_of_ts_and_reference(
+        ts, reference, resample_ts, resample_reference
+    )
     if operator_or_bool is not None:
         if isinstance(operator_or_bool, Callable):
             masks = apply_operator_df(
@@ -247,6 +284,8 @@ def envelope_comparison_series(
         metric (Callable, optional): see 'comparison_series'. Defaults to integral_abs_error.
 
         resample_ts (bool, optional): If True, 'ts' wil be resampled according to 'reference'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
+
+        resample_reference (bool, optional): If True, 'reference' wil be resampled according to 'ts'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
 
     Returns:
         float: metric result

@@ -8,6 +8,7 @@ format:
 jupyter: python3
 ---
 
+
 ```{python}
 #| echo: false
 #| output: false
@@ -57,7 +58,7 @@ series_reference.plot(grid=True)
 plt.legend(loc="upper center")
 ```
 
-We calculate the difference between signals 'a'/'b' and the reference. Signals 'a'/'b' are automatically resampled according to the reference, i.e. the option `resample_ts` is set to `True`. The option is available in most of the functions in the following but is set to `False` by default to avoid unnecessary resampling that deteriorates the performance.
+We calculate the difference between signals 'a'/'b' and the reference. The reference is automatically resampled according to the sample time of signals 'a'/'b', i.e. the option `resample_reference` is set to `True`. The option is available in most of the functions in the following but is set to `False` by default to avoid unnecessary resampling that deteriorates the performance. There is also the option `resample_ts` to resample the time series 'a'/'b' to the reference time base. Instead of resampling at every function call, consider using `resample` from `trimes.base` to align the sample time only once before the comparison if the sample time remains constant.
 
 A diagram with two y-axes is used for visualization (original signals on the left axis, difference on the right). In addition, the area between 'b' and 'reference' is filled.
 
@@ -65,7 +66,7 @@ A diagram with two y-axes is used for visualization (original signals on the lef
 from trimes.comparison import subtract
 from trimes.plots import plot_2y, fill_between
 
-difference = subtract(df_ts, series_reference, resample_ts=True)
+difference = subtract(df_ts, series_reference, resample_reference=True)
 difference.columns = ("diff a", "diff b")
 
 signals_a_b_and_reference = pd.concat([df_ts, series_reference])
@@ -81,7 +82,7 @@ Addition works similar:
 ```{python}
 from trimes.comparison import add
 
-sum = add(df_ts, series_reference, resample_ts=True)
+sum = add(df_ts, series_reference, resample_reference=True)
 sum.columns = ("a + ref", "b + ref")
 ax = sum.plot()
 signals_a_b_and_reference.plot(ax=ax)
