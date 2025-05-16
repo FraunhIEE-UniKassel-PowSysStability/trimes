@@ -46,7 +46,7 @@ def get_samples_around(
     num_samples_before: int = -1,
     num_samples_after: int = 0,
 ) -> Union[pd.DataFrame, pd.Series]:
-    """Get samples around a point(s) in time (between 'num_samples_before' and 'num_samples_after', these values are relative to the first sample after 'time'). By default, the samples before and after 'time' are returned.
+    """Get samples around point(s) in time (between 'num_samples_before' and 'num_samples_after', these values are relative to the first sample after 'time'). By default, the samples before and after 'time' are returned.
 
     Args:
         ts (Union[pd.DataFrame, pd.Series]): time series
@@ -55,7 +55,7 @@ def get_samples_around(
         num_samples_after (int, optional): shift after
 
     Returns:
-        _type_: Sample values
+        Union[pd.DataFrame, pd.Series]: Sample values
     """
     index = np.searchsorted(ts.index.values, time)
     return ts.iloc[index + num_samples_before : index + num_samples_after]
@@ -122,7 +122,7 @@ def interp_series(ts: pd.Series, time: np.array) -> pd.Series:
 def get_between(
     ts: Union[pd.DataFrame, pd.Series], tstart: float, tend: float
 ) -> Union[pd.DataFrame, pd.Series]:
-    """Get values between 'tstart' and 'tend'. Returns x for 'tstart' <= x < 'tend'.
+    """Get values between 'tstart' and 'tend'. Returns values for 'tstart' < t < 'tend'.
 
     Args:
         ts (Union[pd.DataFrame, pd.Series]): time series
@@ -134,6 +134,23 @@ def get_between(
     """
     indices = np.searchsorted(ts.index.to_numpy(), [tstart, tend])
     return ts.iloc[indices[0] : indices[1]]
+
+
+def get_between_and_around(
+    ts: Union[pd.DataFrame, pd.Series], tstart: float, tend: float
+) -> Union[pd.DataFrame, pd.Series]:
+    """Get values between 'tstart' and 'tend'. Similar to 'get_between', but includes the samples before 'tstart' (or at 'tstart') and after 'tend' (or at 'tend').
+
+    Args:
+        ts (Union[pd.DataFrame, pd.Series]): time series
+        tstart (int): start time
+        tend (int): end time
+
+    Returns:
+        Union[pd.DataFrame, pd.Series]: Values in range and around range
+    """
+    indices = np.searchsorted(ts.index.to_numpy(), [tstart, tend])
+    return ts.iloc[indices[0] - 1 : indices[1] + 1]
 
 
 def get_index(ts: Union[pd.DataFrame, pd.Series], time: np.array) -> int | ArrayLike:
