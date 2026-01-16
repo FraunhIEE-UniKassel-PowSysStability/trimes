@@ -102,7 +102,7 @@ def get_fourier_coef_imag(x: ArrayLike, k: int = 1, angle: float = 0.0) -> float
     Returns:
         float: Imaginary part of Fourier coefficient
     """
-    sin = np.sin(
+    sin = -np.sin(
         np.linspace(angle, k * 2 * np.pi + angle - 2 * np.pi / len(x), k * len(x))
     )
     return np.mean(sin * x)

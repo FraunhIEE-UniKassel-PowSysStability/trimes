@@ -18,6 +18,8 @@ from trimes.signal_processing import (
     average_rolling,
 )
 
+import matplotlib.pyplot as plt
+
 
 def get_apparent_power_symmetrical_components(
     u: ArrayLike, i: ArrayLike, factor: float = 3
@@ -75,7 +77,6 @@ def get_apparent_power_using_symmetrical_components_and_fourier_coefficients(
     Returns:
         ArrayLike: Apparent power of sym. components (+ sym. comp. of v and i if 'return_symmetrical_components' is True)
     """
-    n = 5
     if time_windows is not None:
         u_fourier_coef_real, u_fourier_coef_imag = get_fourier_coef_rolling(
             u_abc,
@@ -101,8 +102,9 @@ def get_apparent_power_using_symmetrical_components_and_fourier_coefficients(
     u_phasors_abc = u_fourier_coef_real + u_fourier_coef_imag * 1j
     i_phasors_abc = i_fourier_coef_real + i_fourier_coef_imag * 1j
 
-    u_sym_comp = np.apply_along_axis(abc_2_symmetrical_components, 1, u_phasors_abc)
-    i_sym_comp = np.apply_along_axis(abc_2_symmetrical_components, 1, i_phasors_abc)
+    u_sym_comp = abc_2_symmetrical_components(u_phasors_abc)
+    i_sym_comp = abc_2_symmetrical_components(i_phasors_abc)
+
     if not return_symmetrical_components:
         return get_apparent_power_symmetrical_components(u_sym_comp, i_sym_comp)
     else:

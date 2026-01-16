@@ -82,22 +82,41 @@ def dq0_2_abc(dq0: np.array, phi: float) -> np.array:
     return np.dot(dq0_2_abc_matrix, dq0)
 
 
-def frobenius_matrix() -> ArrayLike:
+def frobenius_matrix_symcomp() -> ArrayLike:
+    """Frobenius matrix matrix to transfom from abc to 012
+
+    Returns:
+        ArrayLike: Frobenius matrix
+    """
     a = np.exp(2 / 3 * np.pi * 1j)
-    return 1 / 3 * np.array([[1, a, a * a], [1, a * a, a], [1, 1, 1]])
+    # return 1 / 3 * np.array([[1, a, a * a], [1, a * a, a], [1, 1, 1]])
+    return 1 / 3 * np.array([[1, 1, 1], [1, a, a * a], [1, a * a, a]])
 
 
-def inverse_frobenius_matrix() -> ArrayLike:
+def inverse_frobenius_matrix_symcomp() -> ArrayLike:
+    """Inverse Frobenius matrix to transfom from 012 to abc
+
+    Returns:
+        ArrayLike: Inverse Frobenius matrix
+    """
     a = np.exp(2 / 3 * np.pi * 1j)
     return 1 / 3 * np.array([[1, 1, 1], [1, a * a, a], [1, a, a * a]])
 
 
 def abc_2_symmetrical_components(abc: np.array) -> ArrayLike:
-    return np.dot(frobenius_matrix(), abc)
+    """Transform three-phase values to symmetrical components
+
+    Args:
+        abc (np.array): columns are phase values over time
+
+    Returns:
+        ArrayLike: columns are zero, positive and negative sequence (012)
+    """
+    return np.dot(frobenius_matrix_symcomp(), abc.T).T
 
 
 def symmetrical_components_2_abc(sym_cmp: np.array) -> ArrayLike:
-    return np.dot(inverse_frobenius_matrix(), sym_cmp)
+    return np.dot(inverse_frobenius_matrix_symcomp(), sym_cmp.T).T
 
 
 def abc_2_ab0(abc: np.array) -> np.array:
