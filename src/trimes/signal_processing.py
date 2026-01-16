@@ -103,6 +103,9 @@ def get_angle(x: ArrayLike, **kwargs) -> float:
 def average_rolling(
     ts: Union[pd.DataFrame, pd.Series],
     samples_per_window: int,
+    pad_mode: str = "constant",
+    pad_width: int | tuple | None = None,
+    **kwargs,
 ) -> Union[pd.DataFrame, pd.Series]:
     """Get rolling average of time series 'ts' using 'samples_per_window' samples.
 
@@ -113,6 +116,8 @@ def average_rolling(
     Returns:
         Union[pd.DataFrame, pd.Series]: Averaged time series (same shape as 'ts', first window is extended)
     """
+    if pad_width is None:
+        pad_width = (samples_per_window, 0)
     ts_average = ts.copy()
     ts_ndim = ts.ndim
     if ts_ndim == 1:
@@ -128,7 +133,13 @@ def average_rolling(
         avg = (
             ts_cumsum[samples_per_window:] - ts_cumsum[:-samples_per_window]
         ) / samples_per_window
-        ts_average.iloc[:, col] = extend_np(avg, samples_per_window, "wrap")
+        # ts_average.iloc[:, col] = extend_np(avg, samples_per_window, "wrap")
+        ts_average.iloc[:, col] = np.pad(
+            avg,
+            pad_width=pad_width,
+            mode=pad_mode,
+            **kwargs,
+        )
     if ts_ndim == 1:
         ts_average = ts_average.squeeze()
     return ts_average
