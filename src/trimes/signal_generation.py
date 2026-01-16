@@ -319,22 +319,28 @@ def discretize(
     else:
         return pd.Series(ts.iloc[0:-1].to_numpy(), index=ts.index[1:], name=ts.name)
 
+
+def create_ts_from_dict_with_varying_length(
+    d: dict,
+    time_label="time",
+) -> pd.DataFrame:
+    """Create a time series from a dictionary where the values (vectors) can be shorter than the time vector. If the values are shorter than the time vector, they are filled with their last value.
+
+    Args:
+        d (dict): dict
+        time_label (str, optional): Label (key) in dict that indicates the time. Defaults to "time".
+
     Returns:
-        pd.Series: time series with discrete steps
+        pd.DataFrame: Time series
     """
-    num_time_steps = len(t)
-    time_ticks_for_interpolation = np.empty(num_time_steps * 2 - 1, dtype=float)
-    values_for_interpolation = np.empty(num_time_steps * 2 - 1, dtype=float)
-    for idx in range(num_time_steps - 1):
-        idx2 = idx * 2
-        values_for_interpolation[idx2 : idx2 + 2] = [val[idx], val[idx]]
-        time_ticks_for_interpolation[idx2 : idx2 + 2] = [
-            t[idx],
-            t[idx + 1] - delta_t,
-        ]
-    time_ticks_for_interpolation[-1] = t[-1]
-    values_for_interpolation[-1] = val[-1]
-    ts = pd.Series(values_for_interpolation, index=time_ticks_for_interpolation)
-    ts.name = name
-    ts.index.name = "time"
-    return ts
+    df = pd.DataFrame()
+    time = d[time_label]
+    df.index = time
+    df.index.name = time_label
+    del d[time_label]
+    for variable, values in d.items():
+        if len(values) < len(time):
+            diff_len = len(time) - len(values)
+            values = np.concat([values, np.repeat(values[-1], diff_len)])
+        df[variable] = values
+    return df
