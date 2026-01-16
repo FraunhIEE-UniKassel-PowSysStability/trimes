@@ -293,18 +293,31 @@ def mirror_y(ts: pd.Series, y: float, inplace=False) -> pd.DataFrame | pd.Series
         return mirrored_y
 
 
-def create_discrete_steps_for_interpolated_time_series(
-    t: np.array, val: np.array, delta_t: float = 1e-6, name="0"
-) -> pd.Series:
+def discretize(
+    ts: pd.DataFrame | pd.Series, delta_t: float = 1e-6
+) -> pd.DataFrame | pd.Series:
     """Create a time series that approximates discrete value steps with samples that are close in time.
 
-    E.g. a step in 'val' at time 't' from 0 to 1 is approximated with two samples at 't - delta_t' ('val=0') and 't' ('val=1'), where 'delta_t' is a small value (e.g. 1e-6).
+    For example a 'ts' with index [0,2,3] and a column [20, 50, 60] is changed to a 'ts' with index [0, 1.999, 2, 2.999, 3] and column [20, 20, 50, 50, 60]
 
     Args:
-        t (np.array): time of discrete steps
-        val (np.array): New value at discrete steps 't'
+        ts: Time series
         delta_t (float, optional): time difference at discrete steps. Defaults to 1e-6.
-        name (str, optional): label in pandas series. Defaults to "0".
+
+    Returns:
+        pd.DataFrame | pd.Series: time series with discrete steps
+    """
+    is_frame = isinstance(ts, pd.DataFrame)
+    ts2 = ts.copy()
+    ts2.index = ts.index - delta_t
+    ts = pd.concat([ts, ts2])
+    ts.sort_index(inplace=True)
+    if is_frame:
+        return pd.DataFrame(
+            ts.iloc[0:-1, :].to_numpy(), index=ts.index[1:], columns=ts.columns
+        )
+    else:
+        return pd.Series(ts.iloc[0:-1].to_numpy(), index=ts.index[1:], name=ts.name)
 
     Returns:
         pd.Series: time series with discrete steps
