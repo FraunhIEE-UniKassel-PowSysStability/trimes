@@ -128,7 +128,7 @@ trimes.interp_df(df, [0.5, 3])
 trimes.interp_df(df, [0.5]).squeeze(axis=0)
 ```
 
-`interp_series` does the same with Series input and returns an array:
+`interp_series` does the same with a Series as input:
 
 ```{python}
 trimes.interp_series(df["b"], [0.5, 0.7])
@@ -154,10 +154,20 @@ trimes.get_between(df, 9.5, 10)
 
 *trimes* is more performant because it assumes that the index (time) is monotonously increasing and uses numpy's `searchsorted` function under the hood.
 
-The function 'get_between_and_around' includes the samples before and after the time range (or at the exact points in time).
+The function 'get_between_and_around' includes the samples before and after the time range (or at the exact points in time) by default. You can use the keyword arguments `include_before` and `include_after` to include or exclude furter samples before and after the time range.
 
 ```{python}
-trimes.get_between_and_around(df, 9.5, 10)
+trimes.get_between_and_around(df, 5, 6)
+```
+
+```{python}
+trimes.get_between_and_around(df, 5, 6, num_samples_start=-2, num_samples_end=2) # inlude two samples at beginning and end
+```
+
+`get_between_interp` interpolates at `tstart` and `tend`:
+
+```{python}
+trimes.get_between_interp(df, 5.02, 6.02)
 ```
 
 ## Delta Between Samples
