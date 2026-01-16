@@ -63,16 +63,22 @@ type(a)
 ```
 
 # Discrete Linear Signals
-In the above examples, we created discrete steps from one time step to the other (discontinuity) by setting two consecutive time steps with the same value (e.g. `t = (0, 2, 2, 3, 5)`). If you want to create a signal solely containing discrete steps and don't want to type the values of each step twice, there is a convenience function:
+In the above examples, we created discrete steps from one time step to the other (discontinuity) by setting two consecutive time steps with the same value (e.g. `t = (0, 2, 2, 3, 5)`). If you want to create a signal solely containing discrete steps and don't want to type the values of each step twice, there is a convenience function which accepts a *Timeseries* as input:
 
 ```{python}
-from trimes.signal_generation import create_discrete_steps_for_interpolated_time_series
+from trimes.signal_generation import discretize
+import pandas as pd
 
-t = (0, 1, 3, 4.2)
-y = (1, 3, 0, 2)
+df = pd.DataFrame((1, 3, 0, 2))
+df.index = (0, 1, 3, 4.2)
+df.columns = ["linear"]
 
-ts = create_discrete_steps_for_interpolated_time_series(t, y)
-ts.plot(grid=True)
+ts = discretize(df.copy())
+ts.columns = ["discrete"]
+ax = ts.plot()
+df.plot(ax=ax, grid=True)
+
+ts
 ```
 
 # Periodic Signals
