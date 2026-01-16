@@ -1,5 +1,6 @@
-from typing import Union
+from typing import Union, Callable
 from collections.abc import Iterable
+from functools import partial
 
 import pandas as pd
 import numpy as np
@@ -322,3 +323,25 @@ def create_pandas_series_or_frame_with_same_columns_and_index(
 
 def superpose_series(series: list[pd.Series]):
     return pd.concat(series, axis=1).sum(axis=1)
+
+
+def apply_to_columns(
+    ts: pd.DataFrame | pd.Series, func: Callable, **kwargs
+) -> pd.DataFrame | pd.Series:
+    """
+    Apply 'func' to all columns of 'ts'. Provide additional arguments to 'func' through keyword arguments ('**kwargs').
+
+    Args:
+        ts (pd.DataFrame | pd.Series): time series
+        func (Callable): function for which additional arguments can be provided.
+        kwargs: keyword arguments of this function can be keyword or positional arguments of 'func'.
+
+    Returns:
+        pd.DataFrame | pd.Series: time series
+    """
+    func_partial = partial(func, **kwargs)
+    if isinstance(ts, pd.Series):
+        ts = ts.to_frame().apply(func_partial, axis=0)
+        return ts.squeeze()
+    else:
+        return ts.apply(func_partial, axis=0)
