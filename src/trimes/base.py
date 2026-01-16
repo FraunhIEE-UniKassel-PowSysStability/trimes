@@ -105,11 +105,11 @@ def interp_np_matrix(new_x: np.array, old_x: np.array, y: np.array) -> np.matrix
 
 
 def interp_series(ts: pd.Series, time: np.array) -> pd.Series:
-    """Interpolate (linear) time series
+    """Interpolate time series 'ts' (using linear interpolation) at 'time'.
 
     Args:
         ts (pd.Series): time series
-        time (_type_): point(s) in time
+        time (np.array): point(s) in time
 
     Returns:
         pd.Series: Interpolated values
@@ -137,20 +137,61 @@ def get_between(
 
 
 def get_between_and_around(
-    ts: Union[pd.DataFrame, pd.Series], tstart: float, tend: float
+    ts: Union[pd.DataFrame, pd.Series],
+    tstart: float,
+    tend: float,
+    num_samples_start: int = -1,
+    num_samples_end: int = 1,
 ) -> Union[pd.DataFrame, pd.Series]:
-    """Get values between 'tstart' and 'tend'. Similar to 'get_between', but includes the samples before 'tstart' (or at 'tstart') and after 'tend' (or at 'tend').
+    """Get values between 'tstart' and 'tend'. Similar to 'get_between', but includes samples before 'tstart' (or at 'tstart') and after 'tend' (or at 'tend').
 
     Args:
         ts (Union[pd.DataFrame, pd.Series]): time series
         tstart (int): start time
         tend (int): end time
+        num_samples_start (int, optional): negative values include samples before 'tstart'. Defaults to -1.
+        num_samples_end (int, optional): positive values include samples after 'tend'. Defaults to 1.
 
     Returns:
         Union[pd.DataFrame, pd.Series]: Values in range and around range
     """
     indices = np.searchsorted(ts.index.to_numpy(), [tstart, tend])
-    return ts.iloc[indices[0] - 1 : indices[1] + 1]
+    return ts.iloc[indices[0] + num_samples_start : indices[1] + num_samples_end]
+
+
+def get_between_interp(
+    ts: Union[pd.DataFrame, pd.Series], tstart: float, tend: float
+) -> Union[pd.DataFrame, pd.Series]:
+    """Get between 'tstart' and 'tend' and interpolate the values at 'tstart' and 'tend'.
+
+    Args:
+        ts (Union[pd.DataFrame, pd.Series]): time series
+        tstart (float): start time
+        tend (float): end time
+
+    Returns:
+        Union[pd.DataFrame, pd.Series]: Values in range
+    """
+    indices = np.searchsorted(ts.index.to_numpy(), [tstart, tend])
+    ts_between = ts.iloc[indices[0] - 1 : indices[1] + 1].copy()
+    ts_between.index = ts.index.values[
+        indices[0] - 1 : indices[1] + 1
+    ].copy()  # copying the index separately is important, otherwise the index is not copied and the original index of 'ts' may be altered.
+    if isinstance(ts, pd.DataFrame):
+        if not ts_between.index[0] == tstart:
+            ts_between.iloc[0] = interp_df(ts_between, [tstart]).to_numpy()
+            ts_between.index.values[0] = tstart
+        if not ts_between.index[-1] == tend:
+            ts_between.iloc[-1] = interp_df(ts_between, [tend]).to_numpy()
+            ts_between.index.values[-1] = tend
+    else:
+        if not ts_between.index[0] == tstart:
+            ts_between.iloc[0] = interp_series(ts_between, [tstart]).to_numpy()
+            ts_between.index.values[0] = tstart
+        if not ts_between.index[-1] == tend:
+            ts_between.iloc[-1] = interp_series(ts_between, [tend]).to_numpy()
+            ts_between.index.values[-1] = tend
+    return ts_between
 
 
 def get_index(ts: Union[pd.DataFrame, pd.Series], time: np.array) -> int | ArrayLike:
