@@ -15,14 +15,22 @@
     "href": "docs/tutorials/signal_processing.html",
     "title": "Signal Processing",
     "section": "",
-    "text": "This tutorial demonstrates several signal processing methods, including:\nPlease note that the current functionality is limited and will be extended in future versions.\nWe begin by generating a test signal to which the processing methods will be applied. A three-phase signal with varying frequency and amplitude is used.\nimport numpy as np\nfrom trimes.signal_generation import PeriodicSignal\nfrom matplotlib import pyplot as plt\n\nplt.rcParams.update({\"axes.grid\": True})\n\nsample_time = 1e-4\nmag = 110 * np.sqrt(2) / np.sqrt(3)\n\ncosine_wave = PeriodicSignal(\n    np.arange(0, 0.1, sample_time), f=(50, 55), mag=(0.9 * mag, 1.1 * mag)\n)\ncosine_wave_series_3_phase = cosine_wave.get_signal_n_phases(3)\ncosine_wave_series_3_phase.plot()"
+    "text": "This tutorial demonstrates several signal processing methods, including:\nPlease note that the current functionality is limited and will be extended in future versions.\nWe begin by generating a test signal to which the processing methods will be applied. A three-phase signal with varying frequency and amplitude is used.\nimport numpy as np\nfrom trimes.signal_generation import PeriodicSignal\nfrom matplotlib import pyplot as plt\n\nplt.rcParams.update({\"axes.grid\": True})\n\nsample_time = 1e-4\nmag = 110 * np.sqrt(2) / np.sqrt(3)\n\ncosine_wave = PeriodicSignal(\n    np.arange(0, 0.1, sample_time), f=(50, 55), mag=(0.9 * mag, 1.1 * mag)\n)\ncosine_wave_series_3_phase = cosine_wave.get_signal_n_phases(3)\ncosine_wave_series_3_phase.plot()",
+    "crumbs": [
+      "Tutorials",
+      "Signal Processing"
+    ]
   },
   {
     "objectID": "docs/tutorials/signal_processing.html#fourier-coefficient",
     "href": "docs/tutorials/signal_processing.html#fourier-coefficient",
     "title": "Signal Processing",
     "section": "5.1 Fourier Coefficient",
-    "text": "5.1 Fourier Coefficient\nFourier coefficients can be computed for a selected harmonic order (default: first harmonic).\n\nfrom trimes.fourier import get_fourier_coef_rolling\n\nsamples_per_window = int(1 / (sample_time * 50))\n\nfc = get_fourier_coef_rolling(\n    cosine_wave_series_3_phase.iloc[:, 0],\n    samples_per_window\n)\n\nplt.figure()\nplt.plot(cosine_wave_series_3_phase.index, np.real(fc), label=\"real\")\nplt.plot(cosine_wave_series_3_phase.index, np.imag(fc), label=\"imag\")\nplt.plot(cosine_wave_series_3_phase.index, np.abs(fc), label=\"abs\")\nplt.legend()"
+    "text": "5.1 Fourier Coefficient\nFourier coefficients can be computed for a selected harmonic order (default: first harmonic).\n\nfrom trimes.fourier import get_fourier_coef_rolling\n\nsamples_per_window = int(1 / (sample_time * 50))\n\nfc = get_fourier_coef_rolling(\n    cosine_wave_series_3_phase.iloc[:, 0],\n    samples_per_window\n)\n\nplt.figure()\nplt.plot(cosine_wave_series_3_phase.index, np.real(fc), label=\"real\")\nplt.plot(cosine_wave_series_3_phase.index, np.imag(fc), label=\"imag\")\nplt.plot(cosine_wave_series_3_phase.index, np.abs(fc), label=\"abs\")\nplt.legend()",
+    "crumbs": [
+      "Tutorials",
+      "Signal Processing"
+    ]
   },
   {
     "objectID": "docs/tutorials/getting_started.html",
