@@ -11,29 +11,18 @@
     ]
   },
   {
-    "objectID": "docs/tutorials/overview.html",
-    "href": "docs/tutorials/overview.html",
-    "title": "Overview",
+    "objectID": "docs/tutorials/signal_processing.html",
+    "href": "docs/tutorials/signal_processing.html",
+    "title": "Signal Processing",
     "section": "",
-    "text": "The following tutorials illustrate the funtionality of trimes.\n\n1 Getting Started\nThis tutorial introduces the basic data structure of trimes. It covers basic concepts like (re-)sampling, interpolation and slicing.\n\n\n2 Time Series Comparison\nThis tutorial covers the comparison between time series signals and the calculation of metrics. Starting from simple subtraction, metrics like root mean squared error for upper and lower boundaries (envelope) are calculated. Finally, step response data is analyzed. The tutorial also illustrates some helper functions for plotting (e.g. fill between two time series).\n\n\n3 Time Series Generation\nThis tutorial covers the generation of time series signals. It is shown how to create linear interpolated signals and periodic signals (superimposing several frequencies).\n\n\n\n\n Back to top",
-    "crumbs": [
-      "Tutorials",
-      "Overview"
-    ]
+    "text": "This tutorial demonstrates several signal processing methods, including:\nPlease note that the current functionality is limited and will be extended in future versions.\nWe begin by generating a test signal to which the processing methods will be applied. A three-phase signal with varying frequency and amplitude is used.\nimport numpy as np\nfrom trimes.signal_generation import PeriodicSignal\nfrom matplotlib import pyplot as plt\n\nplt.rcParams.update({\"axes.grid\": True})\n\nsample_time = 1e-4\nmag = 110 * np.sqrt(2) / np.sqrt(3)\n\ncosine_wave = PeriodicSignal(\n    np.arange(0, 0.1, sample_time), f=(50, 55), mag=(0.9 * mag, 1.1 * mag)\n)\ncosine_wave_series_3_phase = cosine_wave.get_signal_n_phases(3)\ncosine_wave_series_3_phase.plot()"
   },
   {
-    "objectID": "docs/index.html",
-    "href": "docs/index.html",
-    "title": "Trimes",
-    "section": "",
-    "text": "trimes (transient time series) is a python package for transient time series data in pandas format. The application is actually for all time series data where the time vector has a numerical format (e.g numpy’s float64) - as opposed to the frequently used DateTime format. To the best of our knowledge, there is currently no other python package focusing on transient time series data as described and the mentioned DateTime format is not convenient for transient time series.\ntrimes provides functionality for pandas DataFrames (in the format mentioned above) for the following use cases:\nand more.\nHave a look at the tutorials to get started."
-  },
-  {
-    "objectID": "docs/index.html#installation",
-    "href": "docs/index.html#installation",
-    "title": "Trimes",
-    "section": "Installation",
-    "text": "Installation\npip install trimes"
+    "objectID": "docs/tutorials/signal_processing.html#fourier-coefficient",
+    "href": "docs/tutorials/signal_processing.html#fourier-coefficient",
+    "title": "Signal Processing",
+    "section": "5.1 Fourier Coefficient",
+    "text": "5.1 Fourier Coefficient\nFourier coefficients can be computed for a selected harmonic order (default: first harmonic).\n\nfrom trimes.fourier import get_fourier_coef_rolling\n\nsamples_per_window = int(1 / (sample_time * 50))\n\nfc = get_fourier_coef_rolling(\n    cosine_wave_series_3_phase.iloc[:, 0],\n    samples_per_window\n)\n\nplt.figure()\nplt.plot(cosine_wave_series_3_phase.index, np.real(fc), label=\"real\")\nplt.plot(cosine_wave_series_3_phase.index, np.imag(fc), label=\"imag\")\nplt.plot(cosine_wave_series_3_phase.index, np.abs(fc), label=\"abs\")\nplt.legend()"
   },
   {
     "objectID": "docs/tutorials/getting_started.html",
@@ -88,6 +77,31 @@
     "crumbs": [
       "Tutorials",
       "Getting Started"
+    ]
+  },
+  {
+    "objectID": "docs/index.html",
+    "href": "docs/index.html",
+    "title": "Trimes",
+    "section": "",
+    "text": "trimes (transient time series) is a python package for transient time series data in pandas format. The application is actually for all time series data where the time vector has a numerical format (e.g numpy’s float64) - as opposed to the frequently used DateTime format. To the best of our knowledge, there is currently no other python package focusing on transient time series data as described and the mentioned DateTime format is not convenient for transient time series.\ntrimes provides functionality for pandas DataFrames (in the format mentioned above) for the following use cases:\nand more.\nHave a look at the tutorials to get started."
+  },
+  {
+    "objectID": "docs/index.html#installation",
+    "href": "docs/index.html#installation",
+    "title": "Trimes",
+    "section": "Installation",
+    "text": "Installation\npip install trimes"
+  },
+  {
+    "objectID": "docs/tutorials/overview.html",
+    "href": "docs/tutorials/overview.html",
+    "title": "Overview",
+    "section": "",
+    "text": "The following tutorials illustrate the funtionality of trimes.\n\n1 Getting Started\nThis tutorial introduces the basic data structure of trimes. It covers basic concepts like (re-)sampling, interpolation and slicing.\n\n\n2 Time Series Comparison\nThis tutorial covers the comparison between time series signals and the calculation of metrics. Starting from simple subtraction, metrics like root mean squared error for upper and lower boundaries (envelope) are calculated. Finally, step response data is analyzed. The tutorial also illustrates some helper functions for plotting (e.g. fill between two time series).\n\n\n3 Time Series Generation\nThis tutorial covers the generation of time series signals. It is shown how to create linear interpolated signals and periodic signals (superimposing several frequencies).\n\n\n4 Signal Processing\nThis tutorial covers the application of signal processing methods to time series data. It includes examples of filtering, Fourier analysis, and other common signal processing techniques.\n\n\n\n\n Back to top",
+    "crumbs": [
+      "Tutorials",
+      "Overview"
     ]
   },
   {
