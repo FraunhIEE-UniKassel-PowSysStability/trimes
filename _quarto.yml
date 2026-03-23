@@ -1,5 +1,7 @@
 project:
   type: website
+  resources:
+    - docs/api
 
 metadata-files:
   - _sidebar.yml
@@ -16,6 +18,8 @@ website:
         href: docs/index.qmd
       - text: Tutorials
         href: docs/tutorials/overview.qmd 
+      - text: "API"
+        href: docs/api/api.qmd  
     tools:
       - icon: github
         href: https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes  
@@ -27,6 +31,8 @@ website:
         - docs/tutorials/getting_started.qmd
         - docs/tutorials/time_series_comparison.qmd
         - docs/tutorials/time_series_generation.qmd
+        - docs/tutorials/signal_processing.qmd
+         
 format:
   html:
     theme: cosmo

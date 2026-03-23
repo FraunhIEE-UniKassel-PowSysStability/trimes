@@ -8,3 +8,4 @@ venv/
 /_site/
 /_freeze/
 **/*.quarto_ipynb
+*.html
