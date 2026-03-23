@@ -1,7 +1,8 @@
 ---
-title: 'Overview'
+title: Overview
 toc: true
 number-sections: true
+jupyter: python3
 ---
 
 The following tutorials illustrate the funtionality of *trimes*.
@@ -17,4 +18,3 @@ This [tutorial](time_series_generation.qmd) covers the generation of time series
 
 # Signal Processing
 This [tutorial](signal_processing.qmd) covers the application of signal processing methods to time series data. It includes examples of filtering, Fourier analysis, and other common signal processing techniques.
-
