@@ -14,8 +14,6 @@ jupyter: python3
 #| output: false
 %load_ext autoreload
 %autoreload 2
-import sys
-sys.path.append(r"..\..\src")  # local path to trimes
 ```
 
 This tutorial covers the generation of time series signals. It is shown how to create linear interpolated signals and periodic signals (superimposing several frequencies).
@@ -58,8 +56,7 @@ from trimes.signal_generation import mirror_y
 upper_boundary = ts.iloc[:, 0]
 ts_envelope = mirror_y(upper_boundary, 1, inplace=True)
 ts_envelope.columns = ("upper boundary", "lower boundary")
-a = ts_envelope.plot(grid=True)
-type(a)
+ts_envelope.plot(grid=True)
 ```
 
 # Discrete Linear Signals
@@ -130,9 +127,9 @@ Signals can be superimposed and concatenated by creating an array of signals. Th
   - 0-0.1 s
   - 0.1-0.2 s
 - several frequencies are superimposed:
-  - fundamental: $50$ Hz (actually varies between $50$ and $52$ Hz)
+  - fundamental: $50$ Hz (actually varies between $50$ and $60$ Hz)
   - fifth harmonic: $5*50=250$ Hz
-  - negative sequence: rotating with $-50$ Hz (actually varies between $-50$ and $-52$ Hz)
+  - negative sequence: rotating with $-50$ Hz (actually varies between $-50$ and $-60$ Hz)
 - $3$ phases
 
 ```{python}
@@ -143,20 +140,40 @@ from trimes.signal_generation import (
 time_spans = [np.arange(0, 0.1, sample_time), np.arange(0.1, 0.2, sample_time)]
 signals = [
     [
-        PeriodicSignal(time_spans[0], f=50, mag=mag),
-        PeriodicSignal(time_spans[0], f=5 * 50, mag=0.05 * mag),
-        PeriodicSignal(time_spans[0], f=-50, mag=0.03 * mag),
-    ],
+        PeriodicSignal(time_spans[0], f=(50, 60), mag=mag),
+        PeriodicSignal(time_spans[0], f=(50 * 5, 60 * 5), mag=0.05 * mag),
+        PeriodicSignal(time_spans[0], f=(-50, -60), mag=0.03 * mag),
+    ],    
     [
-        PeriodicSignal(time_spans[1], f=(50, 52), mag=mag),
-        PeriodicSignal(time_spans[1], f=(50 * 5, 52 * 5), mag=0.05 * mag),
-        PeriodicSignal(time_spans[1], f=(-50, -52), mag=0.03 * mag),
+        PeriodicSignal(time_spans[1], f=50, mag=mag),
+        PeriodicSignal(time_spans[1], f=5 * 50, mag=0.05 * mag),
+        PeriodicSignal(time_spans[1], f=-50, mag=0.03 * mag),
     ],
 ]
 res = superimpose_and_concat_periodic_signals(
-    signals, angle_continuation=True, num_phases=3
+    signals, num_phases=3,
 )
 res.plot()
+plt.grid()
+```
+
+Notice that the signals are continuous at the transition between periods (at t = 0.1 s), since the final angle of the previous period is automatically carried over as the initial angle of the next. This behavior can be disabled, in which case the initial angle resets to zero at each period boundary, resulting in a discontinuity at t = 0.1 s:
+
+```{python}
+res = superimpose_and_concat_periodic_signals(
+    signals, num_phases=3, angle_continuation=False
+)
+res.loc[0.08:0.12, :].plot()
+plt.grid()
+```
+
+It is also possible to specify a certain angular jump at the transition:
+
+```{python}
+res = superimpose_and_concat_periodic_signals(
+    signals, num_phases=3, angular_jump=[np.pi/2] # 90 degree angular jump
+)
+res.loc[0.08:0.12, :].plot()
 plt.grid()
 ```
 
@@ -176,5 +193,37 @@ attrs_of_columns[1].plot(title="harmonic")
 plt.grid()
 attrs_of_columns[2].plot(title="negative sequence")
 plt.grid()
+```
+
+# Noise
+To illustrate the addition of noise to signals, we first create a "clean" periodic three-phase signal.
+
+```{python}
+import numpy as np
+import pandas as pd
+
+sample_time = 1e-4
+mag = 110 * np.sqrt(2) / np.sqrt(3)
+t = np.arange(0, 0.1, sample_time)
+cosine_wave = PeriodicSignal(t, f=50, mag=mag, offset=10, phi=np.pi * 0.3)
+cosine_wave_series = cosine_wave.get_signal_n_phases(3)
+cosine_wave_series.plot()
+plt.grid()
+```
+
+There are functions to add normal and uniform distributed noise to time series.
+
+```{python}
+from trimes.signal_generation import add_normal_noise, add_uniform_noise
+
+cosine_normal_noise = add_normal_noise(cosine_wave_series, 0.1*mag)
+cosine_normal_noise.plot()
+plt.grid()
+plt.title("Normal noise")
+
+cosine_normal_noise = add_uniform_noise(cosine_wave_series, -0.1*mag, 0.1*mag)
+cosine_normal_noise.plot()
+plt.grid()
+plt.title("Uniform noise")
 ```
 
