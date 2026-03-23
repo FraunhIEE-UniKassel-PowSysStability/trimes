@@ -78,32 +78,32 @@ def get_apparent_power_using_symmetrical_components_and_fourier_coefficients(
         ArrayLike: Apparent power of sym. components (+ sym. comp. of v and i if 'return_symmetrical_components' is True)
     """
     if time_windows is not None:
-        u_fourier_coef_real, u_fourier_coef_imag = get_fourier_coef_rolling(
+        u_fourier_coef = get_fourier_coef_rolling(
             u_abc,
             samples_per_window,
             time_windows=time_windows,
         )
 
-        i_fourier_coef_real, i_fourier_coef_imag = get_fourier_coef_rolling(
+        i_fourier_coef = get_fourier_coef_rolling(
             i_abc,
             samples_per_window,
             time_windows=time_windows,
         )
     else:
-        u_fourier_coef_real, u_fourier_coef_imag = get_fourier_coef_rolling(
+        u_fourier_coef = get_fourier_coef_rolling(
             u_abc,
             samples_per_window,
         )
-        i_fourier_coef_real, i_fourier_coef_imag = get_fourier_coef_rolling(
+        i_fourier_coef = get_fourier_coef_rolling(
             i_abc,
             samples_per_window,
         )
 
-    u_phasors_abc = u_fourier_coef_real + u_fourier_coef_imag * 1j
-    i_phasors_abc = i_fourier_coef_real + i_fourier_coef_imag * 1j
+    # u_phasors_abc = u_fourier_coef_real + u_fourier_coef_imag * 1j
+    # i_phasors_abc = i_fourier_coef_real + i_fourier_coef_imag * 1j
 
-    u_sym_comp = abc_2_symmetrical_components(u_phasors_abc)
-    i_sym_comp = abc_2_symmetrical_components(i_phasors_abc)
+    u_sym_comp = abc_2_symmetrical_components(u_fourier_coef)
+    i_sym_comp = abc_2_symmetrical_components(i_fourier_coef)
 
     if not return_symmetrical_components:
         return get_apparent_power_symmetrical_components(u_sym_comp, i_sym_comp)

@@ -1,0 +1,180 @@
+---
+title: Signal Processing
+toc: true
+number-sections: true
+mainfont: Arial
+format:
+  html: default
+jupyter: python3
+---
+
+
+```{python}
+#| echo: false
+#| output: false
+%load_ext autoreload
+%autoreload 2
+import sys
+sys.path.append(r"..\..\src")  # local path to trimes
+```
+
+This tutorial demonstrates several signal processing methods, including:
+
+* Moving average (rolling mean)
+* Filtering (e.g., PT1)
+* Derivatives
+* Fourier analysis
+* Root mean square (RMS)
+
+Please note that the current functionality is limited and will be extended in future versions.
+
+We begin by generating a test signal to which the processing methods will be applied. A three-phase signal with varying frequency and amplitude is used.
+
+```{python}
+import numpy as np
+from trimes.signal_generation import PeriodicSignal
+from matplotlib import pyplot as plt
+
+plt.rcParams.update({"axes.grid": True})
+
+sample_time = 1e-4
+mag = 110 * np.sqrt(2) / np.sqrt(3)
+
+cosine_wave = PeriodicSignal(
+    np.arange(0, 0.1, sample_time), f=(50, 55), mag=(0.9 * mag, 1.1 * mag)
+)
+cosine_wave_series_3_phase = cosine_wave.get_signal_n_phases(3)
+cosine_wave_series_3_phase.plot()
+```
+
+# Padding
+
+Padding is a key concept in many signal processing algorithms. For example, when computing a moving average, valid results are only available after a number of samples equal to the window length. However, it is often desirable that the output signal has the same length as the input signal.
+
+The question then becomes how to fill the undefined boundary values. By default, *trimes* pads with zeros at the beginning. Internally, it uses `numpy.pad`, so custom padding behavior can be specified via corresponding keyword arguments.
+
+The number of samples per averaging window (e.g., one period at 50 Hz) can be computed as:
+
+```{python}
+samples_per_window = int(1 / (sample_time * 50))
+```
+
+Two padding examples—padding only at the start and padding at both the start and end (each with length `0.5 * samples_per_window`) are shown in Section @sec-moving-average. For further details, refer to the NumPy documentation for `numpy.pad` (numpy.org/doc/stable/reference/generated/numpy.pad.html).
+
+# Moving Average (Rolling Mean) {#sec-moving-average}
+
+We compute the moving average over one period (assuming 50 Hz) using the default padding (zeros added at the beginning).
+
+```{python}
+from trimes.signal_processing import average_rolling
+
+avg = average_rolling(
+    cosine_wave_series_3_phase,
+    samples_per_window=samples_per_window
+)
+avg.plot()
+```
+
+The moving average increases slightly due to the frequency gradient in the signal and its deviation from 50 Hz.
+
+Next, we illustrate custom padding by adding ones at both the beginning and the end.
+
+```{python}
+pad_with = int(samples_per_window / 2), int(samples_per_window / 2)
+
+avg = average_rolling(
+    cosine_wave_series_3_phase,
+    samples_per_window=samples_per_window,
+    pad_width=pad_with,
+    constant_values=1,
+)
+avg.plot()
+```
+
+# Derivative
+
+Two methods are available for computing derivatives:
+
+1. Finite differences combined with a moving average (suitable for low-noise signals)
+2. Savitzky–Golay filtering (more robust in the presence of noise)
+
+Note that the Savitzky–Golay filter relies on SciPy internally and handles padding differently. Please consult the docstring for details.
+
+```{python}
+from trimes.derivative import diff_moving_avg, savgol_derivative
+
+diff = diff_moving_avg(
+    cosine_wave_series_3_phase,
+    samples_per_window=10,
+    sample_time=sample_time
+)
+diff.plot()
+plt.title("Derivative (moving average method)")
+
+diff = savgol_derivative(
+    cosine_wave_series_3_phase,
+    samples_per_window=10,
+    sample_time=sample_time,
+    pad_mode="constant",
+    constant_values=1e4
+)
+diff.plot()
+plt.title("Derivative (Savitzky–Golay filter)")
+```
+
+# Filter
+
+Currently, only a first-order low-pass filter (PT1) is implemented.
+
+```{python}
+from trimes.filter import pt1_filter
+
+cosine_wave_series_3_phase.plot(label="original")
+plt.title("Original Signal")
+
+filt = pt1_filter(cosine_wave_series_3_phase, 0.01, sample_time)
+filt.plot()
+plt.title("Filtered Signal (PT1)")
+```
+
+# Fourier Analysis
+
+A Fast Fourier Transform (FFT) implementation is planned for future releases.
+
+## Fourier Coefficient
+
+Fourier coefficients can be computed for a selected harmonic order (default: first harmonic).
+
+```{python}
+from trimes.fourier import get_fourier_coef_rolling
+
+samples_per_window = int(1 / (sample_time * 50))
+
+fc = get_fourier_coef_rolling(
+    cosine_wave_series_3_phase.iloc[:, 0],
+    samples_per_window
+)
+
+plt.figure()
+plt.plot(cosine_wave_series_3_phase.index, np.real(fc), label="real")
+plt.plot(cosine_wave_series_3_phase.index, np.imag(fc), label="imag")
+plt.plot(cosine_wave_series_3_phase.index, np.abs(fc), label="abs")
+plt.legend()
+```
+
+# Root Mean Square
+
+The root mean square (RMS) value is calculated over a rolling window as follows:
+
+```{python}
+from trimes.root_mean_square import rms_rolling
+
+rms = rms_rolling(
+    cosine_wave_series_3_phase,
+    samples_per_window=samples_per_window
+)
+
+ax = cosine_wave_series_3_phase.plot()
+rms.plot(ax=ax)
+```
+

@@ -104,7 +104,7 @@ def average_rolling(
     ts: Union[pd.DataFrame, pd.Series],
     samples_per_window: int,
     pad_mode: str = "constant",
-    pad_width: int | tuple | None = None,
+    pad_width: int | tuple[int, int] | None = None,
     **kwargs,
 ) -> Union[pd.DataFrame, pd.Series]:
     """Get rolling average of time series 'ts' using 'samples_per_window' samples.
@@ -112,6 +112,9 @@ def average_rolling(
     Args:
         ts (Union[pd.DataFrame, pd.Series]): time series
         samples_per_window (int): number of samples per window
+        pad_mode (str, optional): pad mode (see numpy docs). Defaults to "constant".
+        pad_width (int | tuple | None, optional): width for padding (see numpy docs). Defaults to None.
+        **kwargs: used in numpy.pad
 
     Returns:
         Union[pd.DataFrame, pd.Series]: Averaged time series (same shape as 'ts', first window is extended)

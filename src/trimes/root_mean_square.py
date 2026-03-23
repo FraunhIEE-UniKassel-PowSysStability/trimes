@@ -15,13 +15,21 @@ def rms_rolling(
     ts: Union[pd.DataFrame, pd.Series],
     samples_per_window: int,
     normalize_magnitude: bool = False,
+    pad_width: int | tuple[int, int] | None = None,
+    pad_mode: str = "constant",
+    **kwargs,
 ) -> Union[pd.DataFrame, pd.Series]:
     """Calculate the root mean square (RMS) of a time series using a rolling window.
+
+    numpy.pad is used for padding (see numpy.org/doc/stable/reference/generated/numpy.pad.html)
 
     Args:
         ts (Union[pd.DataFrame, pd.Series]): time series
         samples_per_window (int): number of samples per window (e.g. for one period)
         normalize_magnitude (bool, optional): If true, results are multiplied by sqrt(2) (e.g. for per unit values). Defaults to False.
+        pad_mode (str, optional): pad mode (see numpy docs). Defaults to "constant".
+        pad_width (int | tuple | None, optional): width for padding (see numpy docs). Defaults to None.
+        **kwargs: used in numpy.pad
 
     Returns:
         Union[pd.DataFrame, pd.Series]: time series with RMS values
@@ -35,7 +43,11 @@ def rms_rolling(
         * normalization_factor
     )
     rms = np.apply_along_axis(func_rms, 0, ts_squared)
-    rms = extend_np(rms, samples_per_window, "wrap")
+    if pad_width is None:
+        pad_width = (samples_per_window, 0)
+    rms = np.apply_along_axis(
+        np.pad, 0, rms, pad_width=pad_width, mode=pad_mode, **kwargs
+    )
     return create_pandas_series_or_frame_with_same_columns_and_index(rms, ts)
 
 
@@ -44,15 +56,21 @@ def rms_rolling_variable_window(
     time_windows: np.array,
     samples_per_window: int,
     normalize_magnitude: bool = False,
+    pad_width: int | tuple[int, int] | None = None,
+    pad_mode: str = "constant",
 ) -> Union[pd.DataFrame, pd.Series]:
     """Calculate the root mean square (RMS) of a time series using a rolling window with variable length.
-    The length of the window is defined by the time_windows parameter. The time_windows parameter must be the
+    The length of the window is defined by the time_windows parameter.
+
+    numpy.pad is used for padding (see numpy.org/doc/stable/reference/generated/numpy.pad.html)
 
     Args:
         ts (Union[pd.DataFrame, pd.Series]): time series
         time_windows (np.array): Duration of windows (e.g. periods for variable frequencies). Same length as the number of rows in the time series.
         samples_per_window (int): Number of samples per window.
         normalize_magnitude (bool, optional): If true, results are multiplied by sqrt(2) (e.g. for per unit values). Defaults to False.
+        pad_mode (str, optional): pad mode (see numpy docs). Defaults to "constant".
+        pad_width (int | tuple | None, optional): width for padding (see numpy docs). Defaults to None.
 
     Returns:
         Union[pd.DataFrame, pd.Series]: RMS values of the time series
@@ -72,7 +90,15 @@ def rms_rolling_variable_window(
             np.sqrt(np.sum(np.power(samples, 2), axis=0) / samples_per_window)
             * normalization_factor
         )
-    rms = extend_np(rms, index_first_window, "wrap")
+    if pad_width is None:
+        pad_width = (samples_per_window, 0)
+    rms = np.apply_along_axis(
+        np.pad,
+        0,
+        rms,
+        pad_width=pad_width,
+        mode=pad_mode,
+    )
     return create_pandas_series_or_frame_with_same_columns_and_index(rms.squeeze(), ts)
 
 
@@ -80,7 +106,7 @@ def rms_min_max(
     ts: pd.DataFrame,
     filter_time_constant: float,
 ) -> pd.Series:
-    """Get apprmation of RMS value of a 3-phase signal using difference between maxima and minima of the phases and low pass filtering to reduce the ripple.
+    """Get approximation of RMS value of a 3-phase signal using difference between maxima and minima of the phases and low pass filtering to reduce the ripple.
 
     According to www.pscad.com/webhelp/EMTDC_Tools_Library/Meters/vm3ph2
 

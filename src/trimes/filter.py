@@ -1,14 +1,19 @@
+from functools import partial
+
 import numpy as np
+import pandas as pd
+from scipy.signal import lfilter
+from trimes.base import (
+    apply_to_columns,
+)
 
 
-def pt1(x, Tf, sample_time):
-    """Implement a first-order low-pass filter.
-
-    The input data is x, the filter's cutoff frequency is omega_c
-    [rad/s] and the sample time is T [s].  The output is y.
-    """
-    y = np.empty(x.shape[0], dtype=float)
-    y[0] = x[0]
-    for k in np.arange(1, x.shape[0]):
-        y[k] = y[k - 1] + (x[k] - y[k - 1]) / Tf * sample_time
-    return y
+def pt1_filter(ts: np.ndarray, T: float, dt: float) -> np.ndarray:
+    alpha = T / (T + dt)
+    b = [1 - alpha]  # Numerator coefficients
+    a = [1, -alpha]  # Denominator coefficients
+    lfilter_part = partial(lfilter, b, a)
+    return apply_to_columns(
+        ts,
+        lfilter_part,
+    )

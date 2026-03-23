@@ -15,3 +15,6 @@ This [tutorial](time_series_comparison.qmd) covers the comparison between time s
 # Time Series Generation
 This [tutorial](time_series_generation.qmd) covers the generation of time series signals. It is shown how to create linear interpolated signals and periodic signals (superimposing several frequencies).
 
+# Signal Processing
+This [tutorial](signal_processing.qmd) covers the application of signal processing methods to time series data. It includes examples of filtering, Fourier analysis, and other common signal processing techniques.
+
