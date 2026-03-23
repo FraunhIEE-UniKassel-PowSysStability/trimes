@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.26">
+<meta name="generator" content="quarto-1.9.35">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
 <title>Getting Started – trimes</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -69,15 +72,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../../docs/tutorials/overview.html" rel="prev">
 <script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../../site_libs/quarto-html/popper.min.js"></script>
 <script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-46f66b053e56abd73bb6e954d61a315b.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../site_libs/bootstrap/bootstrap-b02963f547e5a3a91d4e2e620940cacb.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-89699b88b9ca286e3880c839ecacb412.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -140,6 +142,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li class="nav-item">
     <a class="nav-link active" href="../../docs/tutorials/overview.html" aria-current="page"> 
 <span class="menu-text">Tutorials</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../docs/api/api.html"> 
+<span class="menu-text">API</span></a>
   </li>  
 </ul>
           </div> <!-- /navcollapse -->
@@ -243,7 +249,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="data-structure" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Data Structure</h1>
 <p>First we create a time series with two curves between 0 and 10 seconds. The time samples are randomly varied (sample time is not constant). This could be for example results of simulations with an adaptive (variable) step solver. Note that there is a separate tutorial where more convenient ways to create time series signals are shown, but we want to illustrate the illustrate the data structure here.</p>
-<div id="01ce50f1" class="cell" data-execution_count="2">
+<div id="a7a761eb" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.append(<span class="vs">r"</span><span class="dv">..</span><span class="ch">\.</span><span class="dv">.\s</span><span class="vs">rc"</span>)  <span class="co"># local path to trimes (usually not required)</span></span>
@@ -272,8 +278,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(time)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Time samples:
-[0.00000000e+00 1.00120840e-03 1.99659573e-03 ... 9.99700329e+00
- 9.99799840e+00 1.00000000e+01]</code></pre>
+[0.00000000e+00 9.99402542e-04 2.00497001e-03 ... 9.99699673e+00
+ 9.99800117e+00 1.00000000e+01]</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
@@ -284,7 +290,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Let’s create a pandas DataFrame. <em>trimes</em> requires the index to be the time variable. The index can be set at instantiation of the DataFrame or later using <code>set_index</code>.</p>
-<div id="5060f86b" class="cell" data-execution_count="3">
+<div id="981b89cb" class="cell" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set index at in instantiation</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> {<span class="st">"a"</span>: val_a, <span class="st">"b"</span>: val_b}</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame(data, index<span class="op">=</span>time)</span>
@@ -303,19 +309,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
                  a         b
 time                        
 0.000000  0.000000  2.000000
-0.001001  0.001201  1.999999
-0.001997  0.002396  1.999997
-0.003004  0.003604  1.999993
-0.003996  0.004795  1.999988
+0.000999  0.001199  1.999999
+0.002005  0.002406  1.999997
+0.003005  0.003606  1.999993
+0.003999  0.004799  1.999988
 
 Set index after initialization:
                  a         b
 time                        
 0.000000  0.000000  2.000000
-0.001001  0.001201  1.999999
-0.001997  0.002396  1.999997
-0.003004  0.003604  1.999993
-0.003996  0.004795  1.999988</code></pre>
+0.000999  0.001199  1.999999
+0.002005  0.002406  1.999997
+0.003005  0.003606  1.999993
+0.003999  0.004799  1.999988</code></pre>
 </div>
 </div>
 </section>
@@ -324,7 +330,7 @@ time
 <section id="get-samples" class="level2" data-number="2.1">
 <h2 data-number="2.1" class="anchored" data-anchor-id="get-samples"><span class="header-section-number">2.1</span> Get Samples</h2>
 <p>You can get samples from a DataFrame using the index with the <code>loc</code> method. But the input must be exact. Hence, <code>0.0</code> is accepted and returns a pandas Series object because there is a sample at exactly that time. However, <code>0.55</code> will throw a key error.</p>
-<div id="9eb2b792" class="cell" data-execution_count="4">
+<div id="7556b9a3" class="cell" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>df.loc[<span class="fl">0.0</span>]  <span class="co"># -&gt; ok, because `0.0` is in df.index</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># df.loc[0.55] -&gt; KeyError</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="4">
@@ -334,17 +340,17 @@ Name: 0.0, dtype: float64</code></pre>
 </div>
 </div>
 <p>The <code>get_sample</code> method of <em>trimes</em> returns a pandas Series object with the next sample after the queried time:</p>
-<div id="bef1a005" class="cell" data-execution_count="5">
+<div id="dfcf3ef4" class="cell" data-execution_count="5">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>trimes.get_sample(df, <span class="fl">0.0</span>)  <span class="co"># -&gt; same as df.loc[0.0]</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>trimes.get_sample(df, <span class="fl">0.55</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="5">
-<pre><code>a    0.633521
-b    1.778534
-Name: 0.551004029507348, dtype: float64</code></pre>
+<pre><code>a    0.633515
+b    1.778538
+Name: 0.5509987426757798, dtype: float64</code></pre>
 </div>
 </div>
 <p><code>get_sample</code> and <code>get_sample_shifted</code> accept multiple samples and then return a DataFrame. <code>get_sample_shifted</code> shifts the returned samples. For example the input -1 returns the samples before the sample time:</p>
-<div id="4156f0f2" class="cell" data-execution_count="6">
+<div id="f7026cad" class="cell" data-execution_count="6">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>trimes.get_sample_shifted(df, [<span class="fl">0.55</span>, <span class="dv">2</span>], <span class="op">-</span><span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="6">
 <div>
@@ -365,14 +371,14 @@ Name: 0.551004029507348, dtype: float64</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">0.549999</th>
-<td>0.632464</td>
-<td>1.779324</td>
+<th data-quarto-table-cell-role="th">0.549997</th>
+<td>0.632463</td>
+<td>1.779325</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">1.999997</th>
-<td>1.298716</td>
-<td>-0.246175</td>
+<th data-quarto-table-cell-role="th">1.999001</th>
+<td>1.298947</td>
+<td>-0.244583</td>
 </tr>
 </tbody>
 </table>
@@ -381,7 +387,7 @@ Name: 0.551004029507348, dtype: float64</code></pre>
 </div>
 </div>
 <p>You can also query samples around a point in time:</p>
-<div id="19214515" class="cell" data-execution_count="7">
+<div id="38305608" class="cell" data-execution_count="7">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>trimes.get_samples_around(df, <span class="fl">0.55</span>, <span class="op">-</span><span class="dv">1</span>, <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="7">
 <div>
@@ -402,19 +408,19 @@ Name: 0.551004029507348, dtype: float64</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">0.549999</th>
-<td>0.632464</td>
-<td>1.779324</td>
+<th data-quarto-table-cell-role="th">0.549997</th>
+<td>0.632463</td>
+<td>1.779325</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">0.551004</th>
-<td>0.633521</td>
-<td>1.778534</td>
+<th data-quarto-table-cell-role="th">0.550999</th>
+<td>0.633515</td>
+<td>1.778538</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">0.552005</th>
-<td>0.634572</td>
-<td>1.777745</td>
+<th data-quarto-table-cell-role="th">0.552004</th>
+<td>0.634571</td>
+<td>1.777746</td>
 </tr>
 </tbody>
 </table>
@@ -424,32 +430,32 @@ Name: 0.551004029507348, dtype: float64</code></pre>
 </div>
 <p>This returns the samples from -1 to 2 (relative to first sample after 0.55).</p>
 <p>These methods work with DataFrames as well as with Series:</p>
-<div id="19727b14" class="cell" data-execution_count="8">
+<div id="4199b554" class="cell" data-execution_count="8">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>trimes.get_samples_around(df[<span class="st">"a"</span>], <span class="fl">0.55</span>, <span class="op">-</span><span class="dv">1</span>, <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="8">
 <pre><code>time
-0.549999    0.632464
-0.551004    0.633521
-0.552005    0.634572
+0.549997    0.632463
+0.550999    0.633515
+0.552004    0.634571
 Name: a, dtype: float64</code></pre>
 </div>
 </div>
 <p>Whereas <code>get_sample</code> returns the values, <code>get_index</code> returns their index (index of first sample after point in time):</p>
-<div id="cc4c65d3" class="cell" data-execution_count="9">
+<div id="8fd9b55c" class="cell" data-execution_count="9">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>index <span class="op">=</span> trimes.get_index(df, <span class="fl">0.55</span>)</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Then iloc can be used</span></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>df.iloc[index]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="9">
-<pre><code>a    0.633521
-b    1.778534
-Name: 0.551004029507348, dtype: float64</code></pre>
+<pre><code>a    0.633515
+b    1.778538
+Name: 0.5509987426757798, dtype: float64</code></pre>
 </div>
 </div>
 </section>
 <section id="interpolation" class="level2" data-number="2.2">
 <h2 data-number="2.2" class="anchored" data-anchor-id="interpolation"><span class="header-section-number">2.2</span> Interpolation</h2>
 <p><code>interp_df</code> returns a DataFrame with interpolated (linear) values:</p>
-<div id="99570b09" class="cell" data-execution_count="10">
+<div id="0d500422" class="cell" data-execution_count="10">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>trimes.interp_df(df, [<span class="fl">0.5</span>, <span class="dv">3</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="10">
 <div>
@@ -481,7 +487,7 @@ Name: 0.551004029507348, dtype: float64</code></pre>
 </div>
 </div>
 <p><code>interp_df</code> returns a DataFrame even if there is only one sample. You can use <code>squeeze</code> to get a Series object:</p>
-<div id="a61dbdb6" class="cell" data-execution_count="11">
+<div id="f3e6d14f" class="cell" data-execution_count="11">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>trimes.interp_df(df, [<span class="fl">0.5</span>]).squeeze(axis<span class="op">=</span><span class="dv">0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="11">
 <pre><code>a    0.579259
@@ -490,7 +496,7 @@ Name: 0.5, dtype: float64</code></pre>
 </div>
 </div>
 <p><code>interp_series</code> does the same with a Series as input:</p>
-<div id="3271c608" class="cell" data-execution_count="12">
+<div id="cae4794f" class="cell" data-execution_count="12">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>trimes.interp_series(df[<span class="st">"b"</span>], [<span class="fl">0.5</span>, <span class="fl">0.7</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="12">
 <pre><code>0.5    1.816955
@@ -502,7 +508,7 @@ dtype: float64</code></pre>
 <section id="slicing" class="level2" data-number="2.3">
 <h2 data-number="2.3" class="anchored" data-anchor-id="slicing"><span class="header-section-number">2.3</span> Slicing</h2>
 <p>The <code>loc</code> method of pandas works with slices even if the input time does not fit with the samples (9.5 is not in <code>time</code>):</p>
-<div id="6060f63c" class="cell" data-execution_count="13">
+<div id="b948733e" class="cell" data-execution_count="13">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>df.loc[<span class="fl">9.5</span>:<span class="dv">10</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="13">
 <div>
@@ -523,29 +529,29 @@ dtype: float64</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">9.500001</th>
-<td>0.871148</td>
+<th data-quarto-table-cell-role="th">9.500002</th>
+<td>0.871146</td>
 <td>-0.063698</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">9.501005</th>
-<td>0.870082</td>
+<th data-quarto-table-cell-role="th">9.501002</th>
+<td>0.870085</td>
 <td>-0.063874</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">9.502001</th>
-<td>0.869024</td>
-<td>-0.064049</td>
+<th data-quarto-table-cell-role="th">9.501996</th>
+<td>0.869029</td>
+<td>-0.064048</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">9.503002</th>
-<td>0.867962</td>
-<td>-0.064223</td>
+<th data-quarto-table-cell-role="th">9.503005</th>
+<td>0.867959</td>
+<td>-0.064224</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">9.504002</th>
-<td>0.866900</td>
-<td>-0.064397</td>
+<th data-quarto-table-cell-role="th">9.504004</th>
+<td>0.866898</td>
+<td>-0.064398</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">...</th>
@@ -553,24 +559,24 @@ dtype: float64</code></pre>
 <td>...</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">9.995004</th>
-<td>0.369890</td>
+<th data-quarto-table-cell-role="th">9.994999</th>
+<td>0.369895</td>
 <td>-0.085584</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">9.995997</th>
-<td>0.368972</td>
+<th data-quarto-table-cell-role="th">9.996001</th>
+<td>0.368969</td>
 <td>-0.085502</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">9.997003</th>
-<td>0.368042</td>
-<td>-0.085419</td>
+<th data-quarto-table-cell-role="th">9.996997</th>
+<td>0.368049</td>
+<td>-0.085420</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">9.997998</th>
-<td>0.367123</td>
-<td>-0.085337</td>
+<th data-quarto-table-cell-role="th">9.998001</th>
+<td>0.367121</td>
+<td>-0.085336</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">10.000000</th>
@@ -585,7 +591,7 @@ dtype: float64</code></pre>
 </div>
 </div>
 <p>The method <code>get_between</code> of <em>trimes</em> works similar and is more performant. Note that one difference between <code>loc</code> and <code>get_between</code> is that <code>get_between</code> returns samples before the last time sample (in this case before 10).</p>
-<div id="b5c528b4" class="cell" data-execution_count="14">
+<div id="7b808e91" class="cell" data-execution_count="14">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>trimes.get_between(df, <span class="fl">9.5</span>, <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="14">
 <div>
@@ -606,29 +612,29 @@ dtype: float64</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">9.500001</th>
-<td>0.871148</td>
+<th data-quarto-table-cell-role="th">9.500002</th>
+<td>0.871146</td>
 <td>-0.063698</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">9.501005</th>
-<td>0.870082</td>
+<th data-quarto-table-cell-role="th">9.501002</th>
+<td>0.870085</td>
 <td>-0.063874</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">9.502001</th>
-<td>0.869024</td>
-<td>-0.064049</td>
+<th data-quarto-table-cell-role="th">9.501996</th>
+<td>0.869029</td>
+<td>-0.064048</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">9.503002</th>
-<td>0.867962</td>
-<td>-0.064223</td>
+<th data-quarto-table-cell-role="th">9.503005</th>
+<td>0.867959</td>
+<td>-0.064224</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">9.504002</th>
-<td>0.866900</td>
-<td>-0.064397</td>
+<th data-quarto-table-cell-role="th">9.504004</th>
+<td>0.866898</td>
+<td>-0.064398</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">...</th>
@@ -636,29 +642,29 @@ dtype: float64</code></pre>
 <td>...</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">9.993999</th>
-<td>0.370820</td>
+<th data-quarto-table-cell-role="th">9.993996</th>
+<td>0.370823</td>
 <td>-0.085666</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">9.995004</th>
-<td>0.369890</td>
+<th data-quarto-table-cell-role="th">9.994999</th>
+<td>0.369895</td>
 <td>-0.085584</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">9.995997</th>
-<td>0.368972</td>
+<th data-quarto-table-cell-role="th">9.996001</th>
+<td>0.368969</td>
 <td>-0.085502</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">9.997003</th>
-<td>0.368042</td>
-<td>-0.085419</td>
+<th data-quarto-table-cell-role="th">9.996997</th>
+<td>0.368049</td>
+<td>-0.085420</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">9.997998</th>
-<td>0.367123</td>
-<td>-0.085337</td>
+<th data-quarto-table-cell-role="th">9.998001</th>
+<td>0.367121</td>
+<td>-0.085336</td>
 </tr>
 </tbody>
 </table>
@@ -667,17 +673,17 @@ dtype: float64</code></pre>
 </div>
 </div>
 </div>
-<div id="c910447f" class="cell" data-execution_count="15">
+<div id="a66cf90a" class="cell" data-execution_count="15">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit df.loc[<span class="fl">9.5</span>:<span class="dv">10</span>]</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>timeit trimes.get_between(df, <span class="fl">9.5</span>, <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>24.4 μs ± 390 ns per loop (mean ± std. dev. of 7 runs, 10,000 loops each)
-18.3 μs ± 967 ns per loop (mean ± std. dev. of 7 runs, 100,000 loops each)</code></pre>
+<pre><code>54.5 μs ± 3.14 μs per loop (mean ± std. dev. of 7 runs, 10,000 loops each)
+34.8 μs ± 2.36 μs per loop (mean ± std. dev. of 7 runs, 10,000 loops each)</code></pre>
 </div>
 </div>
 <p><em>trimes</em> is more performant because it assumes that the index (time) is monotonously increasing and uses numpy’s <code>searchsorted</code> function under the hood.</p>
-<p>The function ‘get_between_and_around’ includes the samples before and after the time range (or at the exact points in time) by default. You can use the keyword arguments <code>include_before</code> and <code>include_after</code> to include or exclude furter samples before and after the time range.</p>
-<div id="9e508aaa" class="cell" data-execution_count="16">
+<p>The function ‘get_between_and_around’ includes the samples before and after the time range (or at the exact points in time) by default. You can use the keyword arguments <code>num_samples_start</code> and <code>num_samples_end</code> to include or exclude further samples before and after the time range.</p>
+<div id="bf7b3add" class="cell" data-execution_count="16">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>trimes.get_between_and_around(df, <span class="dv">5</span>, <span class="dv">6</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="16">
 <div>
@@ -698,29 +704,29 @@ dtype: float64</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">4.999998</th>
-<td>-0.117454</td>
-<td>-0.652797</td>
+<th data-quarto-table-cell-role="th">4.999005</th>
+<td>-0.117843</td>
+<td>-0.653993</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">5.000996</th>
+<th data-quarto-table-cell-role="th">5.000001</th>
+<td>-0.117453</td>
+<td>-0.652793</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">5.000995</th>
 <td>-0.117063</td>
-<td>-0.651595</td>
-</tr>
-<tr class="odd">
-<th data-quarto-table-cell-role="th">5.002000</th>
-<td>-0.116668</td>
-<td>-0.650385</td>
+<td>-0.651596</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">5.002996</th>
-<td>-0.116276</td>
-<td>-0.649185</td>
+<th data-quarto-table-cell-role="th">5.001999</th>
+<td>-0.116668</td>
+<td>-0.650387</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">5.003997</th>
-<td>-0.115880</td>
-<td>-0.647978</td>
+<th data-quarto-table-cell-role="th">5.003004</th>
+<td>-0.116272</td>
+<td>-0.649175</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">...</th>
@@ -728,39 +734,39 @@ dtype: float64</code></pre>
 <td>...</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">5.995998</th>
-<td>0.648493</td>
-<td>0.466344</td>
+<th data-quarto-table-cell-role="th">5.996997</th>
+<td>0.649523</td>
+<td>0.467235</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">5.996999</th>
-<td>0.649525</td>
-<td>0.467237</td>
-</tr>
-<tr class="odd">
 <th data-quarto-table-cell-role="th">5.997996</th>
 <td>0.650555</td>
 <td>0.468126</td>
 </tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">5.999001</th>
+<td>0.651592</td>
+<td>0.469020</td>
+</tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">5.999004</th>
-<td>0.651595</td>
-<td>0.469023</td>
+<th data-quarto-table-cell-role="th">5.999999</th>
+<td>0.652623</td>
+<td>0.469909</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">6.000005</th>
-<td>0.652629</td>
-<td>0.469914</td>
+<th data-quarto-table-cell-role="th">6.000999</th>
+<td>0.653655</td>
+<td>0.470798</td>
 </tr>
 </tbody>
 </table>
 
-<p>1001 rows × 2 columns</p>
+<p>1003 rows × 2 columns</p>
 </div>
 </div>
 </div>
-<div id="9d1b4dea" class="cell" data-execution_count="17">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>trimes.get_between_and_around(df, <span class="dv">5</span>, <span class="dv">6</span>, num_samples_start<span class="op">=-</span><span class="dv">2</span>, num_samples_end<span class="op">=</span><span class="dv">2</span>) <span class="co"># inlude two samples at beginning and end</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="f24cd0b9" class="cell" data-execution_count="17">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>trimes.get_between_and_around(df, <span class="dv">5</span>, <span class="dv">6</span>, num_samples_start<span class="op">=-</span><span class="dv">2</span>, num_samples_end<span class="op">=</span><span class="dv">2</span>) <span class="co"># include two samples at beginning and end</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="17">
 <div>
 
@@ -780,29 +786,29 @@ dtype: float64</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">4.998998</th>
-<td>-0.117845</td>
-<td>-0.654001</td>
+<th data-quarto-table-cell-role="th">4.998004</th>
+<td>-0.118233</td>
+<td>-0.655199</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">4.999998</th>
-<td>-0.117454</td>
-<td>-0.652797</td>
+<th data-quarto-table-cell-role="th">4.999005</th>
+<td>-0.117843</td>
+<td>-0.653993</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">5.000996</th>
+<th data-quarto-table-cell-role="th">5.000001</th>
+<td>-0.117453</td>
+<td>-0.652793</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">5.000995</th>
 <td>-0.117063</td>
-<td>-0.651595</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">5.002000</th>
-<td>-0.116668</td>
-<td>-0.650385</td>
+<td>-0.651596</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">5.002996</th>
-<td>-0.116276</td>
-<td>-0.649185</td>
+<th data-quarto-table-cell-role="th">5.001999</th>
+<td>-0.116668</td>
+<td>-0.650387</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">...</th>
@@ -810,39 +816,39 @@ dtype: float64</code></pre>
 <td>...</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">5.996999</th>
-<td>0.649525</td>
-<td>0.467237</td>
-</tr>
-<tr class="even">
 <th data-quarto-table-cell-role="th">5.997996</th>
 <td>0.650555</td>
 <td>0.468126</td>
 </tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">5.999001</th>
+<td>0.651592</td>
+<td>0.469020</td>
+</tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">5.999004</th>
-<td>0.651595</td>
-<td>0.469023</td>
+<th data-quarto-table-cell-role="th">5.999999</th>
+<td>0.652623</td>
+<td>0.469909</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">6.000005</th>
-<td>0.652629</td>
-<td>0.469914</td>
+<th data-quarto-table-cell-role="th">6.000999</th>
+<td>0.653655</td>
+<td>0.470798</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">6.000997</th>
-<td>0.653654</td>
-<td>0.470796</td>
+<th data-quarto-table-cell-role="th">6.001997</th>
+<td>0.654687</td>
+<td>0.471685</td>
 </tr>
 </tbody>
 </table>
 
-<p>1003 rows × 2 columns</p>
+<p>1005 rows × 2 columns</p>
 </div>
 </div>
 </div>
 <p><code>get_between_interp</code> interpolates at <code>tstart</code> and <code>tend</code>:</p>
-<div id="19205ffe" class="cell" data-execution_count="18">
+<div id="5d7db49f" class="cell" data-execution_count="18">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>trimes.get_between_interp(df, <span class="fl">5.02</span>, <span class="fl">6.02</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="18">
 <div>
@@ -863,24 +869,24 @@ dtype: float64</code></pre>
 <td>-0.628671</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">5.020995</th>
-<td>-0.109026</td>
+<th data-quarto-table-cell-role="th">5.020002</th>
+<td>-0.109433</td>
+<td>-0.628668</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">5.020996</th>
+<td>-0.109025</td>
 <td>-0.627469</td>
 </tr>
-<tr class="odd">
-<th data-quarto-table-cell-role="th">5.022002</th>
-<td>-0.108611</td>
-<td>-0.626253</td>
-</tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">5.023003</th>
-<td>-0.108198</td>
-<td>-0.625044</td>
+<th data-quarto-table-cell-role="th">5.022003</th>
+<td>-0.108611</td>
+<td>-0.626251</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">5.024005</th>
-<td>-0.107784</td>
-<td>-0.623833</td>
+<th data-quarto-table-cell-role="th">5.023000</th>
+<td>-0.108199</td>
+<td>-0.625047</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">...</th>
@@ -893,19 +899,19 @@ dtype: float64</code></pre>
 <td>0.484048</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">6.016998</th>
-<td>0.670211</td>
-<td>0.484925</td>
+<th data-quarto-table-cell-role="th">6.017004</th>
+<td>0.670217</td>
+<td>0.484930</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">6.017996</th>
-<td>0.671246</td>
-<td>0.485800</td>
+<th data-quarto-table-cell-role="th">6.018002</th>
+<td>0.671251</td>
+<td>0.485805</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">6.019002</th>
-<td>0.672289</td>
-<td>0.486682</td>
+<th data-quarto-table-cell-role="th">6.018995</th>
+<td>0.672282</td>
+<td>0.486676</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">6.020000</th>
@@ -915,7 +921,7 @@ dtype: float64</code></pre>
 </tbody>
 </table>
 
-<p>1001 rows × 2 columns</p>
+<p>1002 rows × 2 columns</p>
 </div>
 </div>
 </div>
@@ -923,16 +929,16 @@ dtype: float64</code></pre>
 <section id="delta-between-samples" class="level2" data-number="2.4">
 <h2 data-number="2.4" class="anchored" data-anchor-id="delta-between-samples"><span class="header-section-number">2.4</span> Delta Between Samples</h2>
 <p><code>get_delta</code> returns the difference between two samples (under the hood <code>get_sample</code> is used, so the the next sample after the given time is used).</p>
-<div id="261b30dd" class="cell" data-execution_count="19">
+<div id="ed2e22ec" class="cell" data-execution_count="19">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>trimes.get_delta(df, <span class="dv">0</span>, <span class="fl">0.5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="19">
-<pre><code>a    0.579260
-b   -0.183046
+<pre><code>a    0.580338
+b   -0.183767
 dtype: float64</code></pre>
 </div>
 </div>
 <p>One can also query the delta between interpolated (linear) values:</p>
-<div id="ebbe6d3f" class="cell" data-execution_count="20">
+<div id="c9861ef2" class="cell" data-execution_count="20">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>delta <span class="op">=</span> trimes.get_delta_interp_df(df, <span class="dv">0</span>, <span class="fl">0.5</span>)</span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(delta)</span>
 <span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>trimes.get_delta_interp_series(df[<span class="st">"a"</span>], <span class="dv">0</span>, <span class="fl">0.5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -942,15 +948,15 @@ b   -0.183045
 dtype: float64</code></pre>
 </div>
 <div class="cell-output cell-output-display" data-execution_count="20">
-<pre><code>np.float64(0.5792589549510595)</code></pre>
+<pre><code>np.float64(0.5792589545370717)</code></pre>
 </div>
 </div>
 <p><code>get_delta_shift</code> returns the delta between samples around a point in time, in this case between sample 2 before 0.1 and one sample after 0.1:</p>
-<div id="0fb33d12" class="cell" data-execution_count="21">
+<div id="f024d83b" class="cell" data-execution_count="21">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>trimes.get_delta_shift(df, <span class="fl">0.1</span>, <span class="op">-</span><span class="dv">2</span>, <span class="dv">0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="21">
-<pre><code>a    0.002387
-b   -0.000297
+<pre><code>a    0.002393
+b   -0.000295
 dtype: float64</code></pre>
 </div>
 </div>
@@ -959,7 +965,7 @@ dtype: float64</code></pre>
 <section id="resampling" class="level1" data-number="3">
 <h1 data-number="3"><span class="header-section-number">3</span> Resampling</h1>
 <p>The <code>resample</code> method… well you guessed it:</p>
-<div id="5548e48d" class="cell" data-execution_count="22">
+<div id="710a2de5" class="cell" data-execution_count="22">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>df_resampled <span class="op">=</span> trimes.resample(df, np.arange(<span class="dv">0</span>, <span class="fl">10.001</span>, <span class="dv">1</span>))</span>
 <span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df_resampled)</span>
 <span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>df[<span class="st">"a"</span>].plot(label<span class="op">=</span><span class="st">"a original"</span>)</span>

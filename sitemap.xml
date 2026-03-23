@@ -2,15 +2,19 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://FraunhIEE-UniKassel-PowSysStability.github.io/trimes/docs/tutorials/time_series_generation.html</loc>
-    <lastmod>2026-01-16T14:43:34.963Z</lastmod>
+    <lastmod>2026-03-23T14:36:59.693Z</lastmod>
   </url>
   <url>
     <loc>https://FraunhIEE-UniKassel-PowSysStability.github.io/trimes/docs/tutorials/signal_processing.html</loc>
-    <lastmod>2026-02-20T14:14:23.176Z</lastmod>
+    <lastmod>2026-03-23T14:36:57.439Z</lastmod>
   </url>
   <url>
     <loc>https://FraunhIEE-UniKassel-PowSysStability.github.io/trimes/docs/tutorials/getting_started.html</loc>
-    <lastmod>2026-01-16T14:43:32.489Z</lastmod>
+    <lastmod>2026-03-23T14:36:55.371Z</lastmod>
+  </url>
+  <url>
+    <loc>https://FraunhIEE-UniKassel-PowSysStability.github.io/trimes/docs/api/api.html</loc>
+    <lastmod>2026-03-18T21:35:35.154Z</lastmod>
   </url>
   <url>
     <loc>https://FraunhIEE-UniKassel-PowSysStability.github.io/trimes/docs/index.html</loc>
@@ -18,10 +22,10 @@
   </url>
   <url>
     <loc>https://FraunhIEE-UniKassel-PowSysStability.github.io/trimes/docs/tutorials/overview.html</loc>
-    <lastmod>2026-02-20T14:13:10.741Z</lastmod>
+    <lastmod>2026-03-23T14:36:56.436Z</lastmod>
   </url>
   <url>
     <loc>https://FraunhIEE-UniKassel-PowSysStability.github.io/trimes/docs/tutorials/time_series_comparison.html</loc>
-    <lastmod>2026-01-16T14:43:33.835Z</lastmod>
+    <lastmod>2026-03-23T14:36:58.737Z</lastmod>
   </url>
 </urlset>
