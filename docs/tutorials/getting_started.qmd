@@ -154,14 +154,14 @@ trimes.get_between(df, 9.5, 10)
 
 *trimes* is more performant because it assumes that the index (time) is monotonously increasing and uses numpy's `searchsorted` function under the hood.
 
-The function 'get_between_and_around' includes the samples before and after the time range (or at the exact points in time) by default. You can use the keyword arguments `include_before` and `include_after` to include or exclude furter samples before and after the time range.
+The function 'get_between_and_around' includes the samples before and after the time range (or at the exact points in time) by default. You can use the keyword arguments `num_samples_start` and `num_samples_end` to include or exclude further samples before and after the time range.
 
 ```{python}
 trimes.get_between_and_around(df, 5, 6)
 ```
 
 ```{python}
-trimes.get_between_and_around(df, 5, 6, num_samples_start=-2, num_samples_end=2) # inlude two samples at beginning and end
+trimes.get_between_and_around(df, 5, 6, num_samples_start=-2, num_samples_end=2) # include two samples at beginning and end
 ```
 
 `get_between_interp` interpolates at `tstart` and `tend`:
