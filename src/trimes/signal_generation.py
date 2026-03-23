@@ -115,6 +115,7 @@ def superimpose_and_concat_periodic_signals(
     signals: list[list[PeriodicSignal]],
     num_phases: int = 1,
     angle_continuation: bool = True,
+    angular_jump: None | ArrayLike = None,
 ) -> pd.Series | pd.DataFrame:
     """Concatenate array of periodic signals.
 
@@ -123,7 +124,9 @@ def superimpose_and_concat_periodic_signals(
 
         num_phases (int, optional): To create multiples phases with angle separation of pi/num_phases. Defaults to 1.
 
-        angle_continuation (bool, optional): If true, jumps in phase angle between signals that are concatenated are avoided (the phase angle PeriodicSignal.phi is adapted).  Defaults to True.
+        angle_continuation (bool, optional): If true, jumps in phase angle at the transition between signals that are concatenated are avoided (the initial phase angle PeriodicSignal.phi is adapted to be continuous with the previous signal). Defaults to True.
+
+        angular_jump (None | ArrayLike, optional): Intended angular jump at the transition between signals. Length must be the number of rows in 'signals' minus 1. Defaults to None.
 
     Returns:
          pd.Series | pd.DataFrame: Series or DataFrame depending on the number of phases.
@@ -150,23 +153,47 @@ def superimpose_and_concat_periodic_signals(
         res = concat_periodic_signals(signals, num_phases = 3)
         ```
     """
+    try:
+        signals = np.array(signals)
+    except ValueError:
+        raise ValueError(
+            "Items in 'signals' must be of same length (same number of Periodic signals in each row)."
+        )
+    if angular_jump is not None:
+        angle_continuation = (
+            True  # Is used to get continuous angle and then add the angular jmp
+        )
+        angular_jump = np.array(angular_jump)
+        angular_jump = np.insert(angular_jump, 0, 0, axis=0)  # first jump is zero
+    elif angle_continuation:
+        angular_jump = [0] * signals.shape[0]
     phase_signals = [None] * num_phases
     for phase in range(num_phases):
         phase_angle = phase * (-2 * np.pi / num_phases)
-        series_to_concat = [None] * np.shape(signals)[0]
+        series_to_concat = [None] * signals.shape[0]
         if angle_continuation:
-            phi = [signal.phi for signal in signals[0]]
+            phi_initial_next_row = [
+                signal.phi for signal in signals[0]
+            ]  # is updated for each row
         for n, signals_to_superpose in enumerate(signals):
-            signals_superposed = [None] * np.shape(signals)[1]
+            signals_superposed = [None] * signals.shape[1]
             for m, signal in enumerate(signals_to_superpose):
-                phi_initial = signal.phi
+                phi_initial = signal.phi  # store to later reset original value
                 if angle_continuation:
-                    signal.phi = phi[m]
+                    signal.phi = (
+                        phi_initial_next_row[m] + angular_jump[n]
+                    )  # set from last row
                 signal.phi += phase_angle
                 angle = signal.get_angle_over_time()
                 signals_superposed[m] = signal.get_signal_series_from_angle(angle)
-                if angle_continuation:
-                    phi[m] = angle[-1] + (angle[-1] - angle[-2]) - phase_angle
+                if (
+                    angle_continuation
+                ):  # store phi_initial_next_row[m] to use as initial angle in next row
+                    phi_initial_next_row[m] = (
+                        angle[-1] + (angle[-1] - angle[-2]) - phase_angle
+                    )  # ? why
+                    # phi_initial_next_row[m] = angle[-1] - phase_angle
+                # ic(angular_jump[n])
                 signal.phi = phi_initial
             series_to_concat[n] = superpose_series(signals_superposed)
 
@@ -344,3 +371,49 @@ def create_ts_from_dict_with_varying_length(
             values = np.concat([values, np.repeat(values[-1], diff_len)])
         df[variable] = values
     return df
+
+
+def add_normal_noise(
+    df: pd.DataFrame | pd.Series, scale: float, mean: float = 0, seed: None | int = None
+) -> pd.DataFrame | pd.Series:
+    """Add normal distributed noise to time series.
+
+    Thin wrapper around numpy's random number generation.
+
+    Args:
+        df (pd.DataFrame | pd.Series): time series
+        scale (float): Standard deviation (spread or "width") of the distribution. Must be non-negative.
+        mean (float, optional): Mean ("centre") of the distribution.. Defaults to 0.
+        seed (None | int, optional): A seed to initialize the BitGenerator and make results reproducible. If None, then fresh, unpredictable entropy will be pulled from the OS.  Defaults to None.
+
+    Returns:
+        pd.DataFrame: time series with noise
+    """
+    rng = np.random.default_rng(seed=seed)
+    return df + rng.normal(mean, scale, df.shape)
+
+
+def add_uniform_noise(
+    df: pd.DataFrame | pd.Series,
+    low: float = 0.0,
+    high: float = 1.0,
+    seed: None | int = None,
+) -> pd.DataFrame | pd.Series:
+    """Add uniform distributed noise to time series.
+
+    Thin wrapper around numpy's random number generation.
+
+    Args:
+        df (pd.DataFrame | pd.Series): time series
+
+        low (float): Lower boundary of the output interval. All values generated will be greater than or equal to low. The default value is 0.
+
+        high (float): Upper boundary of the output interval. All values generated will be less than high. The high limit may be included in the returned array of floats due to floating-point rounding in the equation low + (high-low) * random_sample(). high - low must be non-negative. The default value is 1.0.
+
+        seed (None | int, optional): A seed to initialize the BitGenerator and make results reproducible. If None, then fresh, unpredictable entropy will be pulled from the OS.  Defaults to None.
+
+    Returns:
+        pd.DataFrame | pd.Series: time series with noise
+    """
+    rng = np.random.default_rng(seed=seed)
+    return df + rng.uniform(low, high, df.shape)
