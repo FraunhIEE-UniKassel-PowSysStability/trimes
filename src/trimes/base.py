@@ -175,23 +175,24 @@ def get_between_interp(
     """
     indices = np.searchsorted(ts.index.to_numpy(), [tstart, tend])
     ts_between = ts.iloc[indices[0] - 1 : indices[1] + 1].copy()
-    ts_between.index = ts.index.values[
+    index = ts.index.values[
         indices[0] - 1 : indices[1] + 1
     ].copy()  # copying the index separately is important, otherwise the index is not copied and the original index of 'ts' may be altered.
     if isinstance(ts, pd.DataFrame):
         if not ts_between.index[0] == tstart:
             ts_between.iloc[0] = interp_df(ts_between, [tstart]).to_numpy()
-            ts_between.index.values[0] = tstart
-        if not ts_between.index[-1] == tend:
+            index[0] = tstart
+        if not index[-1] == tend:
             ts_between.iloc[-1] = interp_df(ts_between, [tend]).to_numpy()
-            ts_between.index.values[-1] = tend
+            index[-1] = tend
     else:
-        if not ts_between.index[0] == tstart:
+        if not index[0] == tstart:
             ts_between.iloc[0] = interp_series(ts_between, [tstart]).to_numpy()
-            ts_between.index.values[0] = tstart
-        if not ts_between.index[-1] == tend:
+            index[0] = tstart
+        if not index[-1] == tend:
             ts_between.iloc[-1] = interp_series(ts_between, [tend]).to_numpy()
-            ts_between.index.values[-1] = tend
+            index[-1] = tend
+    ts_between.index = index
     return ts_between
 
 
