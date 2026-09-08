@@ -1,0 +1,16 @@
+# Lowest dependency versions trimes claims to support.
+# Used by the `minimum-deps` CI job (Python 3.11) to keep the declared
+# lower bounds in pyproject.toml honest. Bump a line here and the matching
+# bound in pyproject.toml together.
+
+# core
+numpy==1.24.4
+pandas==2.1.0
+
+# extras (test / dsp / viz / control)
+scipy==1.11.4
+matplotlib==3.6.3
+scikit-learn==1.3.2
+control==0.10.0
+icecream==2.1.2
+pytest==7.0.0
