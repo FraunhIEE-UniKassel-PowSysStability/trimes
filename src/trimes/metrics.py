@@ -3,7 +3,6 @@ from collections.abc import Callable
 import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
-from trimes._optional import ic
 
 from trimes.base import resample
 

@@ -8,7 +8,6 @@ except ModuleNotFoundError as _exc:  # pragma: no cover - depends on env
         "trimes.derivative needs scipy; install it with: pip install 'trimes[dsp]'"
     ) from _exc
 
-from trimes._optional import ic
 
 from trimes.base import apply_to_columns
 from trimes.signal_processing import average_rolling

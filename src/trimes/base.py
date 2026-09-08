@@ -7,7 +7,6 @@ import numpy as np
 from numpy.typing import ArrayLike
 from typing import Literal
 
-from trimes._optional import ic
 
 FrameOrSeries = pd.Series | pd.DataFrame
 

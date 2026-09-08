@@ -5,7 +5,6 @@ from typing import Union
 import pandas as pd
 import numpy as np
 from numpy.typing import ArrayLike
-from trimes._optional import ic
 
 
 from trimes.base import (

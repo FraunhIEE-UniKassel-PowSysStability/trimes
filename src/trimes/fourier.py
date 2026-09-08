@@ -3,7 +3,6 @@ from typing import Union
 import pandas as pd
 import numpy as np
 from numpy.typing import ArrayLike
-from trimes._optional import ic
 
 from trimes.base import (
     create_pandas_series_or_frame_with_same_columns_and_index,

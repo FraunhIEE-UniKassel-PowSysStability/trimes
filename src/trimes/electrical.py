@@ -5,7 +5,6 @@ Calculate quantities of electric power systems.
 import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
-from trimes._optional import ic
 
 from trimes.root_mean_square import rms_rolling, rms_rolling_variable_window
 from trimes.base import resample

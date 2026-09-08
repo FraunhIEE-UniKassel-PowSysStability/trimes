@@ -12,7 +12,6 @@ except ModuleNotFoundError as _exc:  # pragma: no cover - depends on env
         "trimes.plots needs matplotlib; install it with: pip install 'trimes[viz]'"
     ) from _exc
 
-from trimes._optional import ic
 
 from trimes.base import resample
 

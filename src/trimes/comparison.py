@@ -5,7 +5,6 @@ from functools import partial
 import pandas as pd
 import numpy as np
 from numpy.typing import ArrayLike
-from trimes._optional import ic
 
 from trimes.base import resample, get_between, get_duration
 from trimes.metrics import get_metric_time_series, integral_abs_error
