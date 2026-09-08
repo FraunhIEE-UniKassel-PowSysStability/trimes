@@ -1,11 +1,14 @@
 work_in_progress
 dist
 .pytest_cache
-src/trimes/__pycache__
-tests/__pycache__
+**/__pycache__/
 venv/
 /.quarto/
 /_site/
 /_freeze/
 **/*.quarto_ipynb
 *.html
+
+# Claude Code working directories (not part of the package)
+/memory/
+/scratchpad/
