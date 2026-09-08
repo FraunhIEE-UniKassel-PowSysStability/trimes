@@ -19,22 +19,33 @@ from trimes.base import resample
 def plot_2y(
     ts_axis1: pd.DataFrame | pd.Series,
     ts_axis2: pd.DataFrame | pd.Series,
-    kwargs_ax1: dict = {},
-    kwargs_ax2: dict = {},
+    kwargs_ax1: dict | None = None,
+    kwargs_ax2: dict | None = None,
     colors: list | None = None,
 ) -> tuple[Axes, Axes]:
-    """Plot with two y-axes (i.e. a secondary y-axis on the right).
+    """Plot two time series on a shared x-axis with independent y-axes.
 
-    Args:
-        ts_axis1 (pd.DataFrame | pd.Series): time series for left axis
-        ts_axis2 (pd.DataFrame | pd.Series): time series for right axis
-        kwargs_ax1 (dict, optional): kwargs for left axis. Defaults to {}.
-        kwargs_ax2 (dict, optional): kwargs for right axis. Defaults to {}.
-        colors (list | None, optional): colors used. Defaults to None (default colormap is used).
+    ``ts_axis2`` is drawn against a secondary y-axis on the right, and its
+    colour cycle is offset so its curves do not clash with ``ts_axis1``'s.
 
-    Returns:
-        tuple[Axes, Axes]: left and right axes
+    Parameters
+    ----------
+    ts_axis1 : pandas.DataFrame or pandas.Series
+        Time series for the left y-axis.
+    ts_axis2 : pandas.DataFrame or pandas.Series
+        Time series for the right y-axis.
+    kwargs_ax1, kwargs_ax2 : dict, optional
+        Keyword arguments forwarded to the respective ``.plot`` call.
+    colors : list, optional
+        Colour cycle to use. Defaults to Matplotlib's current cycle.
+
+    Returns
+    -------
+    tuple of matplotlib.axes.Axes
+        The left and right axes.
     """
+    kwargs_ax1 = {} if kwargs_ax1 is None else kwargs_ax1
+    kwargs_ax2 = {} if kwargs_ax2 is None else kwargs_ax2
     ts_axis1.plot(**kwargs_ax1)
     ax1 = plt.gca()
     plt.legend(loc="upper left")
@@ -42,7 +53,8 @@ def plot_2y(
     ax2 = ax1.twinx()
     if colors is None:
         colors = get_pyplot_default_colormap_hex()
-    color_index = ts_axis1.shape[1] % len(colors)
+    n_curves_ax1 = ts_axis1.shape[1] if ts_axis1.ndim == 2 else 1
+    color_index = n_curves_ax1 % len(colors)
     color_cycler = cycler(color=colors[color_index:] + colors[:color_index])
     ax2.set_prop_cycle(color_cycler)
     ts_axis2.plot(ax=ax2, **kwargs_ax2)
@@ -57,14 +69,19 @@ def fill_between(
     resample_ts: bool = True,
     **kwargs,
 ) -> None:
-    """Fill area between time series 'ts1' and 'ts2'.
+    """Shade the area between two time series.
 
-    Args:
-        ax (Axes): matpotlib axes
-        ts1 (pd.Series): time series
-        ts2 (pd.Series): time series
-        resample_ts (bool): If True, 'ts2' is resampled according to the index of 'ts1'. Default is True.
-        kwargs: keyword arguments for 'ax.fill_between'
+    Parameters
+    ----------
+    ts1, ts2 : pandas.Series
+        The two boundary curves.
+    ax : matplotlib.axes.Axes, optional
+        Axes to draw on. Defaults to the current axes.
+    resample_ts : bool, default True
+        If True, resample ``ts2`` onto ``ts1``'s index first (the two series
+        must otherwise already share a sample grid).
+    **kwargs
+        Forwarded to :meth:`~matplotlib.axes.Axes.fill_between`.
     """
     if resample_ts:
         ts2 = resample(ts2, ts1.index.values)
@@ -83,14 +100,20 @@ def add_vertical_line_to_plot(x: float | int, **kwargs):
 def add_point_to_plot(
     x: float, y: float, label: str = "", ha="center", va="top", **kwargs
 ):
-    """Add point to plot.
+    """Mark a single point on the current axes, optionally with a text label.
 
-    Args:
-        x (float): x coordinate
-        y (float): y coordinate
-        label (str, optional): Defaults to "".
-        ha: 'center', 'right', 'left'
-        va: 'top', 'bottom', 'center', 'baseline', 'center_baseline'
+    Parameters
+    ----------
+    x, y : float
+        Point coordinates.
+    label : str, optional
+        Text drawn at the point; omitted if empty.
+    ha : {'center', 'right', 'left'}, default 'center'
+        Horizontal alignment of the label.
+    va : {'top', 'bottom', 'center', 'baseline', 'center_baseline'}, default 'top'
+        Vertical alignment of the label.
+    **kwargs
+        Forwarded to :meth:`~matplotlib.axes.Axes.plot` for the marker.
     """
     ax = plt.gca()
     ax.plot(x, y, "o", **kwargs)
