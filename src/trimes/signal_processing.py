@@ -1,33 +1,41 @@
-"""Generic methods for signal processing"""
+"""Generic signal-processing helpers: edge extension and rolling averages."""
 
-from typing import Union
-
-import pandas as pd
 import numpy as np
+import pandas as pd
 from numpy.typing import ArrayLike
 
+from trimes.base import FrameOrSeries, resample
+from trimes.fourier import get_fourier_coef_real
 
-from trimes.base import (
-    create_pandas_series_or_frame_with_same_columns_and_index,
-    resample,
-)
-import trimes.fourier
+__all__ = [
+    "extend_ts",
+    "extend_np",
+    "get_angle",
+    "average_rolling",
+    "average_rolling_variable_window",
+]
 
 
-def extend_ts(
-    ts: Union[pd.DataFrame, pd.Series], n: int, mode: str = "wrap"
-) -> Union[pd.DataFrame, pd.Series]:
-    """Extend array by 'n' samples in the beginning or end of the array.
+def extend_ts(ts: FrameOrSeries, n: int, mode: str = "wrap") -> FrameOrSeries:
+    """Extend a time series by ``n`` samples at one end, index included.
 
-    See 'extend_np' for more details.
+    See :func:`extend_np` for the value semantics; this wrapper also
+    extrapolates the time index at the same step.
 
-    Args:
-        x (ArrayLike): array to be extended (1D or 2D)
-        n (int): number of samples of the extension. Positive extends the array in the beginning, negative extends the array in the end.
-        mode (str): 'wrap' simply copies the samples from the first/last n samples of 'x', 'reflect' flips the samples. Defaults to 'wrap'.
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series (1-D or 2-D).
+    n : int
+        Number of samples to add. Positive extends the start, negative the end.
+    mode : {'wrap', 'reflect'}, default 'wrap'
+        ``'wrap'`` copies the first/last ``n`` samples; ``'reflect'`` copies
+        them flipped.
 
-    Returns:
-        Union[pd.DataFrame, pd.Series]: extended time series
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        The extended series.
     """
     ts_extended_np = extend_np(ts.to_numpy(), n, mode)
     if n > 0:
@@ -41,25 +49,34 @@ def extend_ts(
     return ts_extended.squeeze()
 
 
-def extend_np(x: ArrayLike, n: int, mode: str = "wrap") -> ArrayLike:
-    """Extend array by 'n' samples in the beginning or end of the array.
+def extend_np(x: np.ndarray, n: int, mode: str = "wrap") -> np.ndarray:
+    """Extend an array by ``n`` samples at one end.
 
-    A typical use case is to extend the array by 'n' samples in the beginning of the array, so that the rolling average can be calculated for the first 'n' samples.
+    Typical use: pad the start so a rolling window has data for the first
+    ``n`` samples.
 
+    Parameters
+    ----------
+    x : numpy.ndarray
+        Array to extend (1-D or 2-D).
+    n : int
+        Number of samples to add. Positive extends the start, negative the end.
+    mode : {'wrap', 'reflect'}, default 'wrap'
+        ``'wrap'`` copies the first/last ``n`` samples; ``'reflect'`` copies
+        them flipped.
 
-    Args:
-        x (ArrayLike): array to be extended (1D or 2D)
-        n (int): number of samples of the extension. Positive extends the array in the beginning, negative extends the array in the end.
-        mode (str): 'wrap' simply copies the samples from the first/last n samples of 'x', 'reflect' flips the samples. Defaults to 'wrap'.
+    Returns
+    -------
+    numpy.ndarray
+        The extended array.
 
-    Raises:
-        ValueError: if 'x' is not 1D or 2D.
-
-    Returns:
-        ArrayLike: extended array
+    Raises
+    ------
+    ValueError
+        If ``x`` has more than two dimensions.
     """
     ndim = x.ndim
-    if ndim == 1:  # work with 2D arrays
+    if ndim == 1:  # work with 2-D arrays
         x = x.reshape(-1, 1)
     elif ndim > 2:
         raise ValueError("x must be 1D or 2D array")
@@ -81,17 +98,27 @@ def extend_np(x: ArrayLike, n: int, mode: str = "wrap") -> ArrayLike:
 
 
 def get_angle(x: ArrayLike, **kwargs) -> float:
-    """Get angle of periodic time series 'x'.
+    """Phase angle of one period of a periodic signal, in radians.
 
-    TODO: Just use np.angle(fourier_coeff) to get angle.
+    Found by maximising the real part of the fundamental Fourier coefficient
+    over the starting angle.
 
-    Get angle by maximizing (minimizing negative) real part of fourier coefficient.
+    Parameters
+    ----------
+    x : array_like
+        Exactly one period of the signal.
+    **kwargs
+        Forwarded to :func:`scipy.optimize.minimize_scalar`.
 
-    Args:
-        x (ArrayLike): One period of time series.
+    Returns
+    -------
+    float
+        Angle in ``[-pi, pi]``.
 
-    Returns:
-        float: angle [rad]
+    Notes
+    -----
+    Needs scipy (the ``dsp`` extra). TODO: replace with
+    ``np.angle`` of the Fourier coefficient, which is a direct formula.
     """
     try:
         from scipy.optimize import minimize_scalar
@@ -99,29 +126,38 @@ def get_angle(x: ArrayLike, **kwargs) -> float:
         raise ModuleNotFoundError(
             "get_angle needs scipy; install it with: pip install 'trimes[dsp]'"
         ) from exc
-    f = lambda y, args: -trimes.fourier.get_fourier_coef_real(args, angle=y)
+    f = lambda y, args: -get_fourier_coef_real(args, angle=y)
     opt_res = minimize_scalar(f, args=(x), bounds=(-np.pi, np.pi), **kwargs)
     return opt_res.x
 
 
 def average_rolling(
-    ts: Union[pd.DataFrame, pd.Series],
+    ts: FrameOrSeries,
     samples_per_window: int,
     pad_mode: str = "constant",
     pad_width: int | tuple[int, int] | None = None,
     **kwargs,
-) -> Union[pd.DataFrame, pd.Series]:
-    """Get rolling average of time series 'ts' using 'samples_per_window' samples.
+) -> FrameOrSeries:
+    """Rolling mean over a fixed window of ``samples_per_window`` samples.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        samples_per_window (int): number of samples per window
-        pad_mode (str, optional): pad mode (see numpy docs). Defaults to "constant".
-        pad_width (int | tuple | None, optional): width for padding (see numpy docs). Defaults to None.
-        **kwargs: used in numpy.pad
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    samples_per_window : int
+        Window length in samples.
+    pad_mode : str, default "constant"
+        Padding mode for the leading samples, passed to :func:`numpy.pad`.
+    pad_width : int or tuple of int, optional
+        Padding width. Defaults to ``(samples_per_window, 0)``.
+    **kwargs
+        Forwarded to :func:`numpy.pad`.
 
-    Returns:
-        Union[pd.DataFrame, pd.Series]: Averaged time series (same shape as 'ts', first window is extended)
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        Same shape and index as ``ts``; the leading window is filled per
+        ``pad_mode``.
     """
     if pad_width is None:
         pad_width = (samples_per_window, 0)
@@ -133,14 +169,12 @@ def average_rolling(
         ts = ts.to_frame()
     else:
         num_col = ts.shape[1]
-    for col in range(
-        num_col
-    ):  # Cannot vectorize this loop because dtypes of columns can be different in DataFrames
+    for col in range(num_col):
+        # not vectorised: DataFrame columns may have different dtypes
         ts_cumsum = np.cumsum(ts.iloc[:, col].to_numpy())
         avg = (
             ts_cumsum[samples_per_window:] - ts_cumsum[:-samples_per_window]
         ) / samples_per_window
-        # ts_average.iloc[:, col] = extend_np(avg, samples_per_window, "wrap")
         ts_average.iloc[:, col] = np.pad(
             avg,
             pad_width=pad_width,
@@ -153,20 +187,28 @@ def average_rolling(
 
 
 def average_rolling_variable_window(
-    ts: Union[pd.DataFrame, pd.Series],
+    ts: FrameOrSeries,
     time_windows: ArrayLike,
     samples_per_window: int,
-) -> Union[pd.DataFrame, pd.Series]:
-    """Get rolling average of time series 'ts' using variable time windows that are resampled with 'samples_per_window' number of samples.
+) -> FrameOrSeries:
+    """Rolling mean over a window of varying duration.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        time_windows (np.array): duration of time windows (same length as rows in 'ts')
-        samples_per_window (int): number of samples per window
+    Each window is resampled to ``samples_per_window`` points before averaging,
+    so it suits signals whose period drifts.
 
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    time_windows : array_like
+        Per-sample window duration (same length as ``ts``).
+    samples_per_window : int
+        Number of points each window is resampled to.
 
-    Returns:
-        Union[pd.DataFrame, pd.Series]: Averaged time series (same shape as 'ts', first window is extended)
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        Same shape and index as ``ts``; the leading window is wrap-extended.
     """
     time = ts.index.values
     index_first_window = (

@@ -1,37 +1,51 @@
-from typing import Union
+"""Rolling RMS of a time series -- fixed window, variable window, and a
+min/max approximation for three-phase signals.
+"""
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+from numpy.typing import ArrayLike
 
 from trimes.base import (
+    FrameOrSeries,
     create_pandas_series_or_frame_with_same_columns_and_index,
     resample,
 )
-from trimes.signal_processing import extend_np
+
+__all__ = ["rms_rolling", "rms_rolling_variable_window", "rms_min_max"]
 
 
 def rms_rolling(
-    ts: Union[pd.DataFrame, pd.Series],
+    ts: FrameOrSeries,
     samples_per_window: int,
     normalize_magnitude: bool = False,
     pad_width: int | tuple[int, int] | None = None,
     pad_mode: str = "constant",
     **kwargs,
-) -> Union[pd.DataFrame, pd.Series]:
-    """Calculate the root mean square (RMS) of a time series using a rolling window.
+) -> FrameOrSeries:
+    """Rolling RMS over a fixed window of ``samples_per_window`` samples.
 
-    numpy.pad is used for padding (see numpy.org/doc/stable/reference/generated/numpy.pad.html)
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    samples_per_window : int
+        Window length in samples (e.g. one fundamental period).
+    normalize_magnitude : bool, default False
+        If True, multiply the result by ``sqrt(2)`` (peak-referenced per-unit
+        values instead of true RMS).
+    pad_width : int or tuple of int, optional
+        Padding for the leading samples. Defaults to ``(samples_per_window, 0)``.
+    pad_mode : str, default "constant"
+        Padding mode, passed to :func:`numpy.pad`.
+    **kwargs
+        Forwarded to :func:`numpy.pad`.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        samples_per_window (int): number of samples per window (e.g. for one period)
-        normalize_magnitude (bool, optional): If true, results are multiplied by sqrt(2) (e.g. for per unit values). Defaults to False.
-        pad_mode (str, optional): pad mode (see numpy docs). Defaults to "constant".
-        pad_width (int | tuple | None, optional): width for padding (see numpy docs). Defaults to None.
-        **kwargs: used in numpy.pad
-
-    Returns:
-        Union[pd.DataFrame, pd.Series]: time series with RMS values
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        Same shape and index as ``ts``; the leading window is filled per
+        ``pad_mode``.
     """
     normalization_factor = np.sqrt(2) if normalize_magnitude else 1
     ts_squared = np.cumsum(np.power(ts.to_numpy(), 2), axis=0)
@@ -51,28 +65,38 @@ def rms_rolling(
 
 
 def rms_rolling_variable_window(
-    ts: Union[pd.DataFrame, pd.Series],
-    time_windows: np.array,
+    ts: FrameOrSeries,
+    time_windows: ArrayLike,
     samples_per_window: int,
     normalize_magnitude: bool = False,
     pad_width: int | tuple[int, int] | None = None,
     pad_mode: str = "constant",
-) -> Union[pd.DataFrame, pd.Series]:
-    """Calculate the root mean square (RMS) of a time series using a rolling window with variable length.
-    The length of the window is defined by the time_windows parameter.
+) -> FrameOrSeries:
+    """Rolling RMS over a window of varying duration.
 
-    numpy.pad is used for padding (see numpy.org/doc/stable/reference/generated/numpy.pad.html)
+    Each window is resampled to ``samples_per_window`` points before the RMS is
+    taken, so it suits signals whose period drifts.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        time_windows (np.array): Duration of windows (e.g. periods for variable frequencies). Same length as the number of rows in the time series.
-        samples_per_window (int): Number of samples per window.
-        normalize_magnitude (bool, optional): If true, results are multiplied by sqrt(2) (e.g. for per unit values). Defaults to False.
-        pad_mode (str, optional): pad mode (see numpy docs). Defaults to "constant".
-        pad_width (int | tuple | None, optional): width for padding (see numpy docs). Defaults to None.
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    time_windows : array_like
+        Per-sample window duration (same length as ``ts``), e.g. the local
+        fundamental period.
+    samples_per_window : int
+        Number of points each window is resampled to.
+    normalize_magnitude : bool, default False
+        If True, multiply the result by ``sqrt(2)``.
+    pad_width : int or tuple of int, optional
+        Padding for the leading samples. Defaults to ``(samples_per_window, 0)``.
+    pad_mode : str, default "constant"
+        Padding mode, passed to :func:`numpy.pad`.
 
-    Returns:
-        Union[pd.DataFrame, pd.Series]: RMS values of the time series
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        RMS values, same shape and index as ``ts``.
     """
     normalization_factor = np.sqrt(2) if normalize_magnitude else 1
     time = ts.index.values
@@ -105,16 +129,23 @@ def rms_min_max(
     ts: pd.DataFrame,
     filter_time_constant: float,
 ) -> pd.Series:
-    """Get approximation of RMS value of a 3-phase signal using difference between maxima and minima of the phases and low pass filtering to reduce the ripple.
+    """Approximate three-phase RMS from the phase-to-phase min/max spread.
 
-    According to www.pscad.com/webhelp/EMTDC_Tools_Library/Meters/vm3ph2
+    Takes ``max(phases) - min(phases)`` per sample, scales it to an RMS, and
+    low-pass filters (first order) to suppress the residual ripple. Follows
+    www.pscad.com/webhelp/EMTDC_Tools_Library/Meters/vm3ph2.
 
-    Args:
-        ts (pd.DataFrame): time series (3 phases)
-        filter_time_constant (float): low pass filter time constant in seconds, e.g. half a period of the fundamental frequency
+    Parameters
+    ----------
+    ts : pandas.DataFrame
+        Three-phase time series (one column per phase).
+    filter_time_constant : float
+        Low-pass time constant in seconds, e.g. half a fundamental period.
 
-    Returns:
-        pd.Series: RMS value of the time series
+    Returns
+    -------
+    pandas.Series
+        The filtered RMS estimate.
     """
     ts_frame = ts.to_frame() if isinstance(ts, pd.Series) else ts
     rms = np.zeros(ts.shape[0], dtype=float)

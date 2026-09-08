@@ -1,38 +1,63 @@
-from typing import Union
+"""Single-bin Fourier coefficients over a sliding window.
 
-import pandas as pd
+A lightweight (numpy + pandas) alternative to :mod:`trimes.fft` for the common
+power-systems task of tracking one harmonic of a periodic signal sample by
+sample. For full spectra use :mod:`trimes.fft` instead.
+"""
+
 import numpy as np
+import pandas as pd
 from numpy.typing import ArrayLike
 
 from trimes.base import (
+    FrameOrSeries,
     create_pandas_series_or_frame_with_same_columns_and_index,
     resample,
 )
 
+__all__ = [
+    "get_fourier_coef_rolling",
+    "get_fourier_coef_real",
+    "get_fourier_coef_imag",
+]
+
 
 def get_fourier_coef_rolling(
-    ts: pd.DataFrame | pd.Series,
+    ts: FrameOrSeries,
     samples_per_window: int,
     k: int = 1,
-    time_windows: None | ArrayLike = None,
+    time_windows: ArrayLike | None = None,
     pad_width: int | tuple[int, int] | None = None,
     pad_mode: str = "constant",
-) -> tuple[ArrayLike, ArrayLike]:
-    """Get rolling fourier coefficients for each sample of a time series.
+) -> FrameOrSeries:
+    """Rolling complex Fourier coefficient of harmonic ``k``, one value per sample.
 
-    Args:
-        ts (pd.DataFrame | pd.Series): time series
-        samples_per_window (int): number of samples per window (e.g. number of samples of one period)
-        k (int, optional): harmonic number. Defaults to 1.
-        time_windows (None | ArrayLike, optional): If specified, the time period of the rolling windows is adapted. Same length as rows in 'ts'. Defaults to None.
-        pad_mode (str, optional): pad mode (see numpy docs). Defaults to "constant".
-        pad_width (int | tuple | None, optional): width for padding (see numpy docs). Defaults to None.
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    samples_per_window : int
+        Samples per window, i.e. per fundamental period.
+    k : int, default 1
+        Harmonic number.
+    time_windows : array_like, optional
+        Per-sample window duration (same length as ``ts``), for signals whose
+        period varies. When given, each window is resampled to
+        ``samples_per_window`` points. Defaults to a fixed-width window.
+    pad_width : int or tuple of int, optional
+        Padding applied to the leading samples that have no full window.
+        Defaults to ``(index_of_first_full_window, 0)``.
+    pad_mode : str, default "constant"
+        Padding mode, passed to :func:`numpy.pad`.
 
-    Returns:
-        tuple[ArrayLike, ArrayLike]: Fourier coefficients (real and imaginary) for each sample of the time series (values of first window are extended)
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        Complex coefficients (RMS-scaled by ``sqrt(2)``), same shape and index
+        as ``ts``; the leading samples are filled per ``pad_mode``.
     """
     ts_ndim = ts.ndim
-    if ts_ndim == 1:  # work with 2D array
+    if ts_ndim == 1:  # work with a 2-D array
         num_col = 1
         ts = ts.to_frame()
     else:
@@ -54,9 +79,7 @@ def get_fourier_coef_rolling(
         get_samples_for_window = lambda idx, col: resample(
             ts.iloc[:, col],
             np.linspace(
-                time[idx]
-                - time_windows[idx]
-                + 0 * time_windows[idx] / samples_per_window,
+                time[idx] - time_windows[idx],
                 time[idx] - time_windows[idx] / samples_per_window,
                 samples_per_window,
             ),
@@ -90,42 +113,35 @@ def get_fourier_coef_rolling(
 
 
 def get_fourier_coef_real(x: ArrayLike, k: int = 1, angle: float = 0.0) -> float:
-    """Get the real part of the Fourier coefficient.
+    """Real part of the ``k``-th Fourier coefficient of one period ``x``.
 
-    'x' is assumed to span exactly one period of the fundamental, so the k-th
-    harmonic completes 'k' full cycles over the 'len(x)' samples.
+    ``x`` is assumed to span exactly one period of the fundamental, so the
+    ``k``-th harmonic completes ``k`` full cycles over ``len(x)`` samples.
 
-    Args:
-        x (ArrayLike): samples
-        k (int, optional): harmonic number. Defaults to 1.
-        angle (float, optional): starting angle of cosine. Defaults to 0.0.
+    Parameters
+    ----------
+    x : array_like
+        One period of samples.
+    k : int, default 1
+        Harmonic number.
+    angle : float, default 0.0
+        Starting angle of the reference cosine, in radians.
 
-    Returns:
-        float: Real part of Fourier coefficient
+    Returns
+    -------
+    float
     """
     n = len(x)
-    cos = np.cos(
-        np.linspace(angle, k * 2 * np.pi + angle - k * 2 * np.pi / n, n)
-    )
+    cos = np.cos(np.linspace(angle, k * 2 * np.pi + angle - k * 2 * np.pi / n, n))
     return np.mean(cos * x)
 
 
 def get_fourier_coef_imag(x: ArrayLike, k: int = 1, angle: float = 0.0) -> float:
-    """Get the imaginary part of the Fourier coefficient.
+    """Imaginary part of the ``k``-th Fourier coefficient of one period ``x``.
 
-    'x' is assumed to span exactly one period of the fundamental, so the k-th
-    harmonic completes 'k' full cycles over the 'len(x)' samples.
-
-    Args:
-        x (ArrayLike): samples
-        k (int, optional): harmonic number. Defaults to 1.
-        angle (float, optional): starting angle of sine. Defaults to 0.0.
-
-    Returns:
-        float: Imaginary part of Fourier coefficient
+    See :func:`get_fourier_coef_real`; ``angle`` is the starting angle of the
+    reference sine.
     """
     n = len(x)
-    sin = -np.sin(
-        np.linspace(angle, k * 2 * np.pi + angle - k * 2 * np.pi / n, n)
-    )
+    sin = -np.sin(np.linspace(angle, k * 2 * np.pi + angle - k * 2 * np.pi / n, n))
     return np.mean(sin * x)
