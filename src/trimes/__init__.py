@@ -14,13 +14,19 @@ optional dependencies are only pulled in when actually used:
 """
 
 import importlib
+from importlib import metadata
 
 from trimes.base import *  # noqa: F401,F403  (re-export, guarded by base.__all__)
 from trimes.base import __all__ as _base_all
 from trimes.analytic import AnalyticSignal
 from trimes import accessor as _accessor  # noqa: F401  (registers `.trimes`)
 
-__all__ = [*_base_all, "AnalyticSignal"]
+try:
+    __version__ = metadata.version("trimes")
+except metadata.PackageNotFoundError:  # pragma: no cover - source tree without install
+    __version__ = "0.0.0+unknown"
+
+__all__ = [*_base_all, "AnalyticSignal", "__version__"]
 
 # Submodules exposed via lazy attribute access (PEP 562), so that e.g.
 # `trimes.fft` works after a bare `import trimes` without importing scipy up

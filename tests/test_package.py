@@ -57,6 +57,13 @@ def test_analytic_signal_is_reexported_from_package():
     assert trimes.AnalyticSignal is not None
 
 
+def test_version_is_exposed():
+    import trimes
+
+    assert isinstance(trimes.__version__, str)
+    assert trimes.__version__[0].isdigit()
+
+
 def test_import_trimes_stays_light():
     """``import trimes`` must not pull in optional extras or the whole
     synchrophasor benchmark layer -- it runs on numpy + pandas alone."""
