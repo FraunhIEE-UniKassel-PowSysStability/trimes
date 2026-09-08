@@ -1,3 +1,13 @@
+"""Synthesise time-domain signals: periodic waveforms (harmonics, ramps,
+multi-phase sets), phase-continuous concatenation of segments, piecewise-linear
+signals, and additive noise.
+
+For a periodic signal that also carries its exact analytic ground truth, see
+:meth:`PeriodicSignal.analytic_signal` and
+:func:`superimpose_and_concat_analytic_signal`, which wrap the waveform in a
+:class:`trimes.analytic.AnalyticSignal`.
+"""
+
 from collections.abc import Callable
 from numbers import Number
 from typing import TYPE_CHECKING
@@ -12,6 +22,21 @@ from trimes.base import superpose_series, get_index
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
+__all__ = [
+    "PeriodicSignal",
+    "superimpose_and_concat_periodic_signals",
+    "superimpose_and_concat_analytic_signal",
+    "get_attributes_of_superimposed_and_concatenated_signals_over_time",
+    "linear_time_series",
+    "make_monotonically_increasing",
+    "get_interpolated",
+    "mirror_y",
+    "discretize",
+    "create_ts_from_dict_with_varying_length",
+    "add_normal_noise",
+    "add_uniform_noise",
+]
+
 
 def _pyplot():
     """Import :mod:`matplotlib.pyplot` lazily (matplotlib is the ``viz`` extra)."""
@@ -25,7 +50,28 @@ def _pyplot():
 
 
 class PeriodicSignal:
-    """Create periodic time series signals."""
+    """A periodic waveform ``mag * func(angle(t)) + offset`` sampled on ``t``.
+
+    Frequency, magnitude and offset may each be a constant, an explicit array
+    over ``t``, or a ``(start, end)`` tuple for a linear ramp. The phase angle
+    is the running integral of ``2*pi*f``.
+
+    Parameters
+    ----------
+    t : array_like
+        Sample instants in seconds.
+    func : callable, default numpy.cos
+        Carrier waveform, applied to the phase angle.
+    f : array_like or tuple, default 1.0
+        Frequency in Hz: a scalar, an array over ``t``, or ``(f_start, f_end)``
+        for a linear ramp.
+    mag : array_like or tuple, default 1.0
+        Amplitude, in the same three forms as ``f``.
+    offset : float or array_like or tuple, default 0.0
+        Additive offset, in the same three forms as ``f``.
+    phi : float, default 0.0
+        Initial phase angle in radians.
+    """
 
     def __init__(
         self,
@@ -60,7 +106,7 @@ class PeriodicSignal:
         "initial angle"
 
     def analytic_signal(self, nominal: float = 50.0) -> AnalyticSignal:
-        """Wrap this signal in a :class:`~trimes.synchrophasor.AnalyticSignal`.
+        """Wrap this signal in a :class:`~trimes.analytic.AnalyticSignal`.
 
         Builds exact closed-form ``amplitude`` / ``frequency`` / ``total_phase``
         callables from the constructor arguments. Supported: a scalar frequency
@@ -118,9 +164,10 @@ class PeriodicSignal:
         return superimpose_and_concat_periodic_signals([[self]], num_phases=n)
 
     def get_angle_over_time(self) -> ArrayLike:
-        """Get angle over time.
+        """Phase angle over ``t`` in radians.
 
-        Calculation is dependent on the frequency format (constant scalar number or gradient).
+        For a scalar frequency this is ``2*pi*f*(t - t[0]) + phi``; for a
+        varying frequency it is the cumulative integral of ``2*pi*f``.
         """
         if isinstance(self.f, Number):
             return 2 * np.pi * self.f * (self.t - self.t[0]) + self.phi
@@ -144,14 +191,20 @@ class PeriodicSignal:
         series = self.get_signal_series()
         series.plot(**kwargs)
 
-    def plot_with_attributes(self, attributes: list[str] | None = None) -> "list[Axes]":
-        """Plot signal with attributes
+    def plot_with_attributes(
+        self, attributes: list[str] | None = None
+    ) -> "list[Axes]":
+        """Plot the waveform above one subplot per attribute over time.
 
-        Args:
-            attributes (list[str] | None, optional): Atrributes ('f', 'mag', 'offset'). Defaults to None (all).
+        Parameters
+        ----------
+        attributes : list of str, optional
+            Which of ``"f"``, ``"mag"``, ``"offset"`` to show. Defaults to all.
 
-        Returns:
-            list[Axes]: Axes of plot.
+        Returns
+        -------
+        list of matplotlib.axes.Axes
+            The waveform axis followed by one axis per attribute.
         """
         plt = _pyplot()
         attr = self.get_signal_attributes_over_time(attributes)
@@ -174,41 +227,45 @@ def superimpose_and_concat_periodic_signals(
     angle_continuation: bool = True,
     angular_jump: None | ArrayLike = None,
 ) -> pd.Series | pd.DataFrame:
-    """Concatenate array of periodic signals.
+    """Superimpose and concatenate a grid of :class:`PeriodicSignal` objects.
 
-    Args:
-        signals (list[list[PeriodicSignal]]): List of lists of PeriodicSignal objects. The PeriodicSignals in each row are superimposed and the resulting column is concatenated.
+    Each inner list ("row") is summed, and the resulting segments are
+    concatenated in time. Optionally expands to several phases and keeps the
+    fundamental phase continuous across segment boundaries.
 
-        num_phases (int, optional): To create multiples phases with angle separation of pi/num_phases. Defaults to 1.
+    Parameters
+    ----------
+    signals : list of list of PeriodicSignal
+        Rows are superimposed; the resulting segments are concatenated.
+    num_phases : int, default 1
+        Number of phases, each shifted by ``2*pi/num_phases``.
+    angle_continuation : bool, default True
+        If True, adjust each segment's initial phase ``phi`` so the fundamental
+        angle is continuous with the previous segment.
+    angular_jump : array_like, optional
+        Deliberate fundamental phase jump (radians) at each interior boundary;
+        length ``len(signals) - 1``.
 
-        angle_continuation (bool, optional): If true, jumps in phase angle at the transition between signals that are concatenated are avoided (the initial phase angle PeriodicSignal.phi is adapted to be continuous with the previous signal). Defaults to True.
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        A Series for ``num_phases == 1``, otherwise a DataFrame with one column
+        per phase.
 
-        angular_jump (None | ArrayLike, optional): Intended angular jump at the transition between signals. Length must be the number of rows in 'signals' minus 1. Defaults to None.
-
-    Returns:
-         pd.Series | pd.DataFrame: Series or DataFrame depending on the number of phases.
-
-    Examples:
-        Define array of PeriodicSignals. Rows will be superimposed and the resulting column will be concatenated:
-
-        ```
-        step_size = 1e-3
-        signals = [
-            [
-                PeriodicSignal(np.arange(0, 0.1, step_size), f=(50, 52)),
-                PeriodicSignal(np.arange(0, 0.1, step_size), f=5*50, mag=(0.03, 0.06)),
-            ],
-            [
-                PeriodicSignal(np.arange(0.1, 0.3, step_size), f=50),
-                PeriodicSignal(np.arange(0.1, 0.3, step_size), f=7*50, mag=0.06),
-            ],
-            [
-                PeriodicSignal(np.arange(0.3, 0.5, step_size), f=49),
-                PeriodicSignal(np.arange(0.3, 0.5, step_size), f=9*50, mag=0.06),
-            ],
-        ]
-        res = concat_periodic_signals(signals, num_phases = 3)
-        ```
+    Examples
+    --------
+    >>> step_size = 1e-3
+    >>> signals = [
+    ...     [
+    ...         PeriodicSignal(np.arange(0, 0.1, step_size), f=(50, 52)),
+    ...         PeriodicSignal(np.arange(0, 0.1, step_size), f=5 * 50, mag=(0.03, 0.06)),
+    ...     ],
+    ...     [
+    ...         PeriodicSignal(np.arange(0.1, 0.3, step_size), f=50),
+    ...         PeriodicSignal(np.arange(0.1, 0.3, step_size), f=7 * 50, mag=0.06),
+    ...     ],
+    ... ]
+    >>> res = superimpose_and_concat_periodic_signals(signals, num_phases=3)
     """
     try:
         signals = np.array(signals)
@@ -217,9 +274,8 @@ def superimpose_and_concat_periodic_signals(
             "Items in 'signals' must be of same length (same number of Periodic signals in each row)."
         )
     if angular_jump is not None:
-        angle_continuation = (
-            True  # Is used to get continuous angle and then add the angular jmp
-        )
+        # build the continuous angle first, then add the deliberate jump
+        angle_continuation = True
         angular_jump = np.array(angular_jump)
         angular_jump = np.insert(angular_jump, 0, 0, axis=0)  # first jump is zero
     elif angle_continuation:
@@ -243,14 +299,14 @@ def superimpose_and_concat_periodic_signals(
                 signal.phi += phase_angle
                 angle = signal.get_angle_over_time()
                 signals_superposed[m] = signal.get_signal_series_from_angle(angle)
-                if (
-                    angle_continuation
-                ):  # store phi_initial_next_row[m] to use as initial angle in next row
+                if angle_continuation:
+                    # initial angle for this row in the next segment: extrapolate
+                    # one step past the last sample, then undo the phase shift.
+                    # TODO: verify the `+ (angle[-1] - angle[-2])` extrapolation
+                    # term (see trimes-gradual-refactor step 5).
                     phi_initial_next_row[m] = (
                         angle[-1] + (angle[-1] - angle[-2]) - phase_angle
-                    )  # ? why
-                    # phi_initial_next_row[m] = angle[-1] - phase_angle
-                # ic(angular_jump[n])
+                    )
                 signal.phi = phi_initial
             series_to_concat[n] = superpose_series(signals_superposed)
 
@@ -382,17 +438,25 @@ def get_attributes_of_superimposed_and_concatenated_signals_over_time(
     columns: list[int] | None = None,
     attributes: list[str] | None = None,
 ) -> list[pd.DataFrame]:
-    """_summary_
+    """Per-column attribute traces for a grid of :class:`PeriodicSignal` objects.
 
-    Args:
-        signals (list[list[PeriodicSignal]]): List of lists of PeriodicSignal objects. The PeriodicSignals in each row are superimposed and the resulting column is concatenated.
+    Mirrors the layout of :func:`superimpose_and_concat_periodic_signals`: for
+    each requested column, the attribute frames of every row are concatenated
+    in time.
 
-        columns (list[int] | None, optional): Columns for which attribute are returned. Defaults to None (all columns).
+    Parameters
+    ----------
+    signals : list of list of PeriodicSignal
+        Rows are superimposed; columns are concatenated.
+    columns : list of int, optional
+        Which columns to return. Defaults to all.
+    attributes : list of str, optional
+        Which of ``"f"``, ``"mag"``, ``"offset"`` to include. Defaults to all.
 
-        attributes (list[str] | None, optional): Attributes ('f', 'mag', 'offset'). Defaults to None (all).
-
-    Returns:
-        list[pd.DataFrame]: Attributes for columns.
+    Returns
+    -------
+    list of pandas.DataFrame
+        One frame per requested column.
     """
     if columns is None:
         columns = range(0, len(signals[0]))
@@ -408,32 +472,46 @@ def get_attributes_of_superimposed_and_concatenated_signals_over_time(
 def linear_time_series(
     t: ArrayLike, y: ArrayLike, sample_time: float
 ) -> pd.DataFrame | pd.Series:
-    """Get linear time series.
+    """Piecewise-linear signal through the points ``(t, y)``, sampled at ``sample_time``.
 
-    Args:
-        t (ArrayLike): points in time
-        y (ArrayLike): y values corresponding to 't'
-        sample_time (float): sample time
+    Parameters
+    ----------
+    t : array_like
+        Break-point times. Non-increasing steps are nudged forward by
+        ``sample_time`` (see :func:`make_monotonically_increasing`) so a
+        vertical step becomes a steep ramp.
+    y : array_like
+        Values at the break points.
+    sample_time : float
+        Output sample step.
 
-    Returns:
-        pd.DataFrame | pd.Series: time series
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        The interpolated signal.
     """
-    t = make_monotonously_increasing(t, sample_time)
+    t = make_monotonically_increasing(t, sample_time)
     ts = get_interpolated(t, y, sample_time)
     return ts
 
 
-def make_monotonously_increasing(t: ArrayLike, sample_time: float) -> ArrayLike:
-    """Make time 't' monotonously increasing.
+def make_monotonically_increasing(t: ArrayLike, sample_time: float) -> np.ndarray:
+    """Force ``t`` to strictly increase.
 
-    Two consecutive values n, k in 't', where k <= n, are replaced with n, k+sample_time.
+    Where a step is non-positive (``t[k] <= t[k-1]``), that entry is moved
+    forward by ``sample_time``.
 
-    Args:
-        t (ArrayLike): time
-        sample_time (float): sample time
+    Parameters
+    ----------
+    t : array_like
+        Times.
+    sample_time : float
+        Amount to nudge non-increasing entries by.
 
-    Returns:
-        ArrayLike: monotonously increasing time
+    Returns
+    -------
+    numpy.ndarray
+        The adjusted times.
     """
     t = np.array(t, dtype=float)
     diff_t_is_zero = np.concatenate([[False], np.diff(t) <= 0])
@@ -441,20 +519,29 @@ def make_monotonously_increasing(t: ArrayLike, sample_time: float) -> ArrayLike:
     return t
 
 
+#: Deprecated misspelled alias of :func:`make_monotonically_increasing`.
+make_monotonously_increasing = make_monotonically_increasing
+
+
 def get_interpolated(
     t: ArrayLike, y: ArrayLike | list[ArrayLike], sample_time: float
 ) -> pd.DataFrame | pd.Series:
-    """Linear interpolated y (specified at 'sample_time') over 't'.
+    """Linearly interpolate values ``y`` given at times ``t`` onto a uniform grid.
 
-    Args:
-        t (ArrayLike): time
+    Parameters
+    ----------
+    t : array_like
+        Times at which ``y`` is given.
+    y : array_like or list of array_like
+        Values at ``t``; pass a list to interpolate several signals at once
+        (the result is then a DataFrame).
+    sample_time : float
+        Output sample step; the grid runs from ``t[0]`` to ``t[-1]``.
 
-        y (ArrayLike | list[ArrayLike]): y values (length of first dimension matches 'sample_time') or list of y values to get several results.
-
-        sample_time (float): sample time (length of first dimension matches 'y')
-
-    Returns:
-        pd.DataFrame | pd.Series: interpolated values
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        The interpolated signal(s).
     """
     index = np.arange(t[0], t[-1] + sample_time, sample_time)
     if not isinstance(y, list):
@@ -471,18 +558,24 @@ def get_interpolated(
     return ts
 
 
-def mirror_y(ts: pd.Series, y: float, inplace=False) -> pd.DataFrame | pd.Series:
-    """Mirror 'ts' at 'y'.
+def mirror_y(
+    ts: pd.Series, y: float, inplace: bool = False
+) -> pd.DataFrame | pd.Series:
+    """Reflect ``ts`` about the horizontal line ``y`` (``2*y - ts``).
 
-    Args:
-        ts (pd.Series): time series
+    Parameters
+    ----------
+    ts : pandas.Series
+        Time series.
+    y : float
+        Value of the mirror line.
+    inplace : bool, default False
+        If True, return a two-column DataFrame with the original and the
+        mirrored signal; otherwise return only the mirrored Series.
 
-        y (float): y (value of horizontal line for mirroring)
-
-        inplace (bool, optional): If True the mirrored signal is added to 'ts' and a DataFrame is returned. Defaults to False (only mirrored signal series is returned).
-
-    Returns:
-        pd.DataFrame | pd.Series: Mirrored series or frame
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
     """
     mirrored_y = 2 * y - ts
     if inplace:
@@ -496,16 +589,23 @@ def mirror_y(ts: pd.Series, y: float, inplace=False) -> pd.DataFrame | pd.Series
 def discretize(
     ts: pd.DataFrame | pd.Series, delta_t: float = 1e-6
 ) -> pd.DataFrame | pd.Series:
-    """Create a time series that approximates discrete value steps with samples that are close in time.
+    """Turn a sampled signal into a staircase by adding a sample just before each step.
 
-    For example a 'ts' with index [0,2,3] and a column [20, 50, 60] is changed to a 'ts' with index [0, 1.999, 2, 2.999, 3] and column [20, 20, 50, 50, 60]
+    For example, ``ts`` with index ``[0, 2, 3]`` and values ``[20, 50, 60]``
+    becomes index ``[0, 1.999, 2, 2.999, 3]`` with values
+    ``[20, 20, 50, 50, 60]`` (for ``delta_t = 1e-3``).
 
-    Args:
-        ts: Time series
-        delta_t (float, optional): time difference at discrete steps. Defaults to 1e-6.
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    delta_t : float, default 1e-6
+        Gap placed before each step.
 
-    Returns:
-        pd.DataFrame | pd.Series: time series with discrete steps
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        The staircase signal.
     """
     is_frame = isinstance(ts, pd.DataFrame)
     ts2 = ts.copy()
@@ -522,16 +622,25 @@ def discretize(
 
 def create_ts_from_dict_with_varying_length(
     d: dict,
-    time_label="time",
+    time_label: str = "time",
 ) -> pd.DataFrame:
-    """Create a time series from a dictionary where the values (vectors) can be shorter than the time vector. If the values are shorter than the time vector, they are filled with their last value.
+    """Build a DataFrame from a dict whose value arrays may be shorter than time.
 
-    Args:
-        d (dict): dict
-        time_label (str, optional): Label (key) in dict that indicates the time. Defaults to "time".
+    Any value array shorter than ``d[time_label]`` is forward-filled with its
+    last element.
 
-    Returns:
-        pd.DataFrame: Time series
+    Parameters
+    ----------
+    d : dict
+        Maps column names to value arrays, plus one key holding the time
+        vector.
+    time_label : str, default "time"
+        The key in ``d`` that holds the time vector.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Indexed by the time vector.
     """
     df = pd.DataFrame()
     time = d[time_label]
@@ -547,20 +656,28 @@ def create_ts_from_dict_with_varying_length(
 
 
 def add_normal_noise(
-    df: pd.DataFrame | pd.Series, scale: float, mean: float = 0, seed: None | int = None
+    df: pd.DataFrame | pd.Series,
+    scale: float,
+    mean: float = 0.0,
+    seed: int | None = None,
 ) -> pd.DataFrame | pd.Series:
-    """Add normal distributed noise to time series.
+    """Add Gaussian noise to a time series.
 
-    Thin wrapper around numpy's random number generation.
+    Parameters
+    ----------
+    df : pandas.Series or pandas.DataFrame
+        Time series.
+    scale : float
+        Standard deviation of the noise (non-negative).
+    mean : float, default 0.0
+        Mean of the noise.
+    seed : int, optional
+        Seed for :func:`numpy.random.default_rng`; ``None`` draws fresh entropy.
 
-    Args:
-        df (pd.DataFrame | pd.Series): time series
-        scale (float): Standard deviation (spread or "width") of the distribution. Must be non-negative.
-        mean (float, optional): Mean ("centre") of the distribution.. Defaults to 0.
-        seed (None | int, optional): A seed to initialize the BitGenerator and make results reproducible. If None, then fresh, unpredictable entropy will be pulled from the OS.  Defaults to None.
-
-    Returns:
-        pd.DataFrame: time series with noise
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        ``df`` plus noise.
     """
     rng = np.random.default_rng(seed=seed)
     return df + rng.normal(mean, scale, df.shape)
@@ -570,23 +687,23 @@ def add_uniform_noise(
     df: pd.DataFrame | pd.Series,
     low: float = 0.0,
     high: float = 1.0,
-    seed: None | int = None,
+    seed: int | None = None,
 ) -> pd.DataFrame | pd.Series:
-    """Add uniform distributed noise to time series.
+    """Add uniform noise on ``[low, high)`` to a time series.
 
-    Thin wrapper around numpy's random number generation.
+    Parameters
+    ----------
+    df : pandas.Series or pandas.DataFrame
+        Time series.
+    low, high : float, default 0.0 and 1.0
+        Bounds of the noise interval (``high - low`` non-negative).
+    seed : int, optional
+        Seed for :func:`numpy.random.default_rng`; ``None`` draws fresh entropy.
 
-    Args:
-        df (pd.DataFrame | pd.Series): time series
-
-        low (float): Lower boundary of the output interval. All values generated will be greater than or equal to low. The default value is 0.
-
-        high (float): Upper boundary of the output interval. All values generated will be less than high. The high limit may be included in the returned array of floats due to floating-point rounding in the equation low + (high-low) * random_sample(). high - low must be non-negative. The default value is 1.0.
-
-        seed (None | int, optional): A seed to initialize the BitGenerator and make results reproducible. If None, then fresh, unpredictable entropy will be pulled from the OS.  Defaults to None.
-
-    Returns:
-        pd.DataFrame | pd.Series: time series with noise
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        ``df`` plus noise.
     """
     rng = np.random.default_rng(seed=seed)
     return df + rng.uniform(low, high, df.shape)

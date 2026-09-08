@@ -1,3 +1,7 @@
+"""Step-response analysis (needs the ``control`` extra: python-control +
+matplotlib).
+"""
+
 try:
     import control
 except ModuleNotFoundError as _exc:  # pragma: no cover - depends on env
@@ -6,33 +10,46 @@ except ModuleNotFoundError as _exc:  # pragma: no cover - depends on env
         "Install it with: pip install 'trimes[control]'"
     ) from _exc
 
+import matplotlib.pyplot as plt
 import pandas as pd
 
 from trimes.plots import (  # raises a helpful error if matplotlib is missing
     add_point_to_plot,
     add_vertical_line_to_plot,
 )
-import matplotlib.pyplot as plt
+
+__all__ = ["step_info_series", "plot_step_info"]
 
 
 def step_info_series(
-    ts: pd.Series, yinitial: float | None = None, yfinal: float | None = None, **kwargs
+    ts: pd.Series,
+    yinitial: float | None = None,
+    yfinal: float | None = None,
+    **kwargs,
 ) -> dict:
-    """Get information on step response. Interface to 'control' package's function 'step_info'.
+    """Step-response characteristics of ``ts``.
 
-    See python-control.readthedocs.io/en/latest/generated/control.step_info.html
+    Thin interface to :func:`control.step_info`
+    (python-control.readthedocs.io/en/latest/generated/control.step_info.html).
+    The series is shifted so the step starts at zero before it is passed on.
 
-    Args:
-        ts (pd.Series): time series
+    Parameters
+    ----------
+    ts : pandas.Series
+        The step response over time.
+    yinitial : float, optional
+        Value before the step. Defaults to the first sample.
+    yfinal : float, optional
+        Steady-state value after the step. Defaults to letting
+        :func:`control.step_info` infer it.
+    **kwargs
+        Forwarded to :func:`control.step_info`.
 
-        yinitial (float | None, optional): Initial value before step. Defaults to None (first value in 'ts' is used).
-
-        yfinal (float | None, optional): Final steady state value after step. Defaults to None (last value in 'ts' is used).
-
-        kwargs: kwargs for control.step_info
-
-    Returns:
-        dict: step information
+    Returns
+    -------
+    dict
+        The step-info dictionary (``RiseTime``, ``SettlingTime``,
+        ``Overshoot``, ...).
     """
     ts_np = ts.to_numpy()
     if yinitial is None:
@@ -45,21 +62,27 @@ def plot_step_info(
     ts: pd.Series,
     step_info: dict,
     yinitial: float | None = None,
-    alpha=0.7,
-    linestyle="--",
+    alpha: float = 0.7,
+    linestyle: str = "--",
 ) -> None:
-    """Plot step information.
+    """Annotate the current axes with markers for a step-info dictionary.
 
-    Args:
-        ts (pd.Series): time series
+    Draws vertical lines for the settling and peak times, horizontal lines for
+    the settling band, over/undershoot and steady-state value, and a marker at
+    the peak.
 
-        step_info (dict): corresponding step info
-
-        yinitial (float | None, optional): Initial value before step. Defaults to None (first value in 'ts' is used).
-
-        alpha (float, optional): plot argument. Defaults to 0.7.
-
-        linestyle (str, optional): plot argument. Defaults to "--".
+    Parameters
+    ----------
+    ts : pandas.Series
+        The step response that ``step_info`` describes.
+    step_info : dict
+        Output of :func:`step_info_series` (or :func:`control.step_info`).
+    yinitial : float, optional
+        Value before the step. Defaults to the first sample of ``ts``.
+    alpha : float, default 0.7
+        Line alpha.
+    linestyle : str, default "--"
+        Line style.
     """
     if yinitial is None:
         yinitial = ts.iloc[0]
@@ -81,7 +104,7 @@ def plot_step_info(
         elif info in ["SettlingMin", "SettlingMax", "SteadyStateValue"]:
             val += yinitial
             plt.axhline(
-                y=val,  # vertical line
+                y=val,
                 label=info,
                 color=ax._get_lines.get_next_color(),
                 **plt_args,
@@ -90,7 +113,7 @@ def plot_step_info(
             if val != 0:
                 val = y_final + val / 100 * (y_final - yinitial)
                 plt.axhline(
-                    y=val,  # vertical line
+                    y=val,
                     label=info,
                     color=ax._get_lines.get_next_color(),
                     **plt_args,
@@ -98,9 +121,8 @@ def plot_step_info(
         elif info in ["Undershoot"]:
             if val != 0:
                 val = yinitial - val / 100 * (y_final - yinitial)
-                print(val)
                 plt.axhline(
-                    y=val,  # vertical line
+                    y=val,
                     label=info,
                     color=ax._get_lines.get_next_color(),
                     **plt_args,
