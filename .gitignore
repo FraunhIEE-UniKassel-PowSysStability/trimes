@@ -9,6 +9,9 @@ venv/
 **/*.quarto_ipynb
 *.html
 
+# generated pdoc API docs (docs/api/*.html covered above)
+docs/api/search.js
+
 # Claude Code working directories (not part of the package)
 /memory/
 /scratchpad/

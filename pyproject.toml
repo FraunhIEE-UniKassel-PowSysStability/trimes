@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling==1.26.3", "hatch-vcs"]
+requires = ["hatchling==1.26.3"]
 build-backend = "hatchling.build"
 
 [project]
@@ -17,7 +17,8 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-# Core trimes -- `import trimes`, trimes.base and trimes.synchrophasor -- runs
+# Core trimes -- `import trimes`, the `.trimes` accessor, trimes.base,
+# trimes.analytic and trimes.synchrophasor (the `.plot` submodule aside) -- runs
 # on numpy + pandas alone. Everything heavier is an extra (see below).
 dependencies = [
     "pandas >= 2.2.3",
@@ -27,7 +28,8 @@ dependencies = [
 [project.optional-dependencies]
 # trimes.plots and the PeriodicSignal.plot* helpers
 viz = ["matplotlib > 3"]
-# trimes.fft, trimes.phasor, trimes.filter, trimes.derivative, get_angle
+# trimes.fft, trimes.filter, trimes.derivative, signal_processing.get_angle
+# (trimes.phasor is numpy-only and needs no extra)
 dsp = ["scipy >= 1.18.1"]
 # trimes.control (step-response interface) + nicer debug output
 control = [
@@ -53,6 +55,9 @@ test = [
 [project.urls]
 "Homepage" = "https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes"
 "Bug Tracker" = "https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/trimes"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
