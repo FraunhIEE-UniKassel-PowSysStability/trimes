@@ -53,6 +53,9 @@ test = [
     "control >= 0.10",
     "icecream >= 2.1.2",
 ]
+# API reference (docs/build_api.py). The tutorials additionally need the
+# Quarto CLI, which is not a Python package.
+docs = ["pdoc >= 14"]
 
 [project.urls]
 "Homepage" = "https://github.com/FraunhIEE-UniKassel-PowSysStability/trimes"
