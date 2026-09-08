@@ -1,0 +1,196 @@
+---
+title: Analytic Signals
+toc: true
+number-sections: true
+mainfont: Arial
+format:
+  html: default
+jupyter: python3
+---
+
+
+```{python}
+#| echo: false
+#| output: false
+%load_ext autoreload
+%autoreload 2
+import sys
+sys.path.append(r"..\..\src")  # local path to trimes
+```
+
+This tutorial covers `trimes.synchrophasor` -- test signals that carry their own
+**analytical ground truth**. The motivating use case is benchmarking phasor,
+frequency and ROCOF estimators (an estimator reports a value; we need to know
+the exact value it *should* have reported), but the object is useful whenever
+you want a signal whose amplitude, frequency and phase you know in closed form.
+
+# The `AnalyticSignal` object
+
+An `AnalyticSignal` wraps a sampled waveform (a pandas `Series`, exactly the
+format the rest of *trimes* uses) together with three callables of a time
+array:
+
+* `amplitude(t)`   -- true peak amplitude of the fundamental,
+* `frequency(t)`   -- true instantaneous frequency in Hz,
+* `total_phase(t)` -- true total phase of the carrier in radians.
+
+Because these are functions, the truth can be evaluated at **arbitrary**
+instants -- not just the sample grid. That matters for estimators: a block
+estimator timestamps its result at a window centre, a recursive one at the
+current sample.
+
+# Generators
+
+The quickest way to get an `AnalyticSignal` is one of the generator functions.
+They all take the sampling rate `fs` first and return an `AnalyticSignal`.
+
+```{python}
+from trimes.synchrophasor import steady_state, modulation, frequency_ramp
+
+fs = 5_000.0
+sig = steady_state(fs, nominal=50.0, frequency=50.2, amplitude=1.0, duration=0.2)
+sig.signal.plot(grid=True, title=sig.signal.name)
+```
+
+`sig.signal` is the sampled waveform. Everything else is derived truth.
+
+## Ground truth at arbitrary instants
+
+`ground_truth(t)` returns a DataFrame with the columns an estimator trace has --
+`frequency`, `amplitude`, `phase`, `rocof`, `phasor` -- evaluated at the instants
+you pass (defaults to the sample grid).
+
+```{python}
+import numpy as np
+
+# e.g. the window centres a 3-cycle block estimator would report at
+report_times = np.arange(0.03, 0.2, 0.02)
+truth = sig.ground_truth(report_times)
+truth
+```
+
+The `phase` column is referenced to the nominal frequency and wrapped to
+`[-pi, pi)`; since the tone is 0.2 Hz off nominal it rotates slowly. `phasor`
+is the RMS complex phasor `(amplitude / sqrt(2)) * exp(1j * phase)`.
+
+## A dynamic signal
+
+`modulation` applies simultaneous amplitude and phase modulation (the IEEE /
+IEC 60255-118-1 dynamic test). The frequency and ROCOF truth follow in closed
+form.
+
+```{python}
+from matplotlib import pyplot as plt
+
+mod = modulation(fs, am_depth=0.1, pm_depth=0.1, modulation_frequency=2.0, duration=1.0)
+
+t = mod.time
+fig, ax = plt.subplots(3, 1, sharex=True, figsize=(7, 5))
+ax[0].plot(t, mod.signal.to_numpy());     ax[0].set_ylabel("signal")
+ax[1].plot(t, mod.frequency(t));          ax[1].set_ylabel("frequency [Hz]")
+ax[2].plot(t, mod.rocof(t));              ax[2].set_ylabel("ROCOF [Hz/s]")
+for a in ax:
+    a.grid(True)
+```
+
+ROCOF truth is a central difference of the frequency function with a `1e-4 s`
+step -- for a piecewise-linear frequency that is exactly the mean of the
+one-sided slopes at a corner.
+
+## Frequency ramp and transition times
+
+```{python}
+ramp = frequency_ramp(fs, nominal=50.0, rocof=1.0, ramp_time=0.5, duration=1.0)
+ramp.frequency(np.array([0.0, 0.25, 0.5, 0.75]))
+```
+
+Instants where the analytic model is not smooth are recorded in
+`metadata["transition_times"]` -- here the two corners of the ramp. Phase 5
+metrics use them to exclude frames around a disturbance from a compliance score.
+
+```{python}
+ramp.metadata["transition_times"]
+```
+
+# Building from your own callables
+
+`build_analytic_signal` is the factory the generators are built on. Pass the
+three truth callables and it samples the waveform straight from them
+(`amplitude(t) * cos(total_phase(t))`, plus optional harmonics and seeded
+noise), so the samples are exactly consistent with the truth.
+
+```{python}
+from trimes.synchrophasor import build_analytic_signal
+
+TWO_PI = 2 * np.pi
+f0 = 50.0
+
+# a linear amplitude sag, constant frequency
+custom = build_analytic_signal(
+    amplitude_fn=lambda t: np.where(t < 0.1, 1.0, 0.8),
+    frequency_fn=lambda t: np.full_like(np.asarray(t, float), f0),
+    total_phase_fn=lambda t: TWO_PI * f0 * np.asarray(t, float),
+    fs=fs,
+    duration=0.2,
+    harmonics={5: 0.05},
+    noise=0.01,
+    seed=0,
+    metadata={"transition_times": [0.1]},
+)
+custom.signal.plot(grid=True)
+```
+
+# Bridging from `PeriodicSignal`
+
+The `PeriodicSignal` class from the signal-generation tutorial can hand back an
+`AnalyticSignal` via `.analytic_signal()`, as long as its parameters have a
+closed form -- a scalar frequency or a `(f_start, f_end)` ramp, a scalar or
+ramped magnitude, zero offset and the default cosine carrier.
+
+```{python}
+from trimes.signal_generation import PeriodicSignal
+
+t = np.arange(0.0, 0.2, 1 / fs)
+ps = PeriodicSignal(t, f=(50.0, 52.0), mag=1.0)
+asig = ps.analytic_signal(nominal=50.0)
+asig.frequency(np.array([t[0], t[t.size // 2], t[-1]]))
+```
+
+# Concatenation with continuous truth
+
+`superimpose_and_concat_analytic_signal` runs the same superimpose-and-concat
+logic as `superimpose_and_concat_periodic_signals` (rows are superimposed,
+segments concatenated) but also carries the **fundamental** phase across every
+boundary and returns an `AnalyticSignal`. The fundamental is the first
+`PeriodicSignal` of each row; the rest (harmonics, negative sequence) shape the
+waveform but not the truth.
+
+```{python}
+from trimes.signal_generation import superimpose_and_concat_analytic_signal
+
+mag = 110 * np.sqrt(2) / np.sqrt(3)
+seg0 = np.arange(0.0, 0.1, 1 / fs)
+seg1 = np.arange(0.1, 0.2, 1 / fs)
+signals = [
+    [PeriodicSignal(seg0, f=50.0, mag=mag), PeriodicSignal(seg0, f=250.0, mag=0.05 * mag)],
+    [PeriodicSignal(seg1, f=52.0, mag=mag), PeriodicSignal(seg1, f=260.0, mag=0.05 * mag)],
+]
+concat = superimpose_and_concat_analytic_signal(signals, nominal=50.0)
+
+t = concat.time
+fig, ax = plt.subplots(2, 1, sharex=True, figsize=(7, 4))
+ax[0].plot(t, concat.signal.to_numpy()); ax[0].set_ylabel("signal")
+ax[1].plot(t, concat.frequency(t));      ax[1].set_ylabel("frequency [Hz]")
+for a in ax:
+    a.grid(True)
+```
+
+The boundary where the fundamental frequency changes (50 to 52 Hz) is recorded:
+
+```{python}
+concat.metadata["transition_times"]
+```
+
+A deliberate angular jump can be injected at a boundary with `angular_jump`
+(one value per interior boundary), which the truth respects.
+```

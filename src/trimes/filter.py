@@ -2,7 +2,14 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
-from scipy.signal import lfilter
+
+try:
+    from scipy.signal import lfilter
+except ModuleNotFoundError as _exc:  # pragma: no cover - depends on env
+    raise ModuleNotFoundError(
+        "trimes.filter needs scipy; install it with: pip install 'trimes[dsp]'"
+    ) from _exc
+
 from trimes.base import (
     apply_to_columns,
 )

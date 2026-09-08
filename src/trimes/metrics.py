@@ -3,9 +3,12 @@ from collections.abc import Callable
 import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
-from icecream import ic
+from trimes._optional import ic
 
 from trimes.base import resample
+
+# numpy renamed np.trapz -> np.trapezoid in 2.0; support both (numpy >= 1.24).
+_trapezoid = getattr(np, "trapezoid", getattr(np, "trapz", None))
 
 
 def get_metric_time_series(
@@ -74,7 +77,8 @@ def get_metric_np(
     """
     if ts.ndim > 1:
         multioutput = "raw_values"
-        reference = np.broadcast_to(reference, (ts.ndim, len(sample_weight))).T
+        # one reference column per column of 'ts' (not a hard-coded 2)
+        reference = np.broadcast_to(np.asarray(reference)[:, None], ts.shape)
     else:
         multioutput = "uniform_average"
     return metric(
@@ -105,7 +109,7 @@ def integral_abs_error(
         float | ArrayLike: result
     """
     weighted_error = _weighted_error(y_true, y_pred, sample_weight)
-    integrated_error = np.trapezoid(np.abs(weighted_error), axis=0)
+    integrated_error = _trapezoid(np.abs(weighted_error), axis=0)
     return _handle_sklearn_multioutput(multioutput, integrated_error)
 
 
@@ -129,7 +133,7 @@ def integral_squared_error(
         float | ArrayLike: result
     """
     weighted_error = _weighted_error(y_true, y_pred, sample_weight)
-    integrated_error = np.trapezoid(np.square(weighted_error), axis=0)
+    integrated_error = _trapezoid(np.square(weighted_error), axis=0)
     return _handle_sklearn_multioutput(multioutput, integrated_error)
 
 

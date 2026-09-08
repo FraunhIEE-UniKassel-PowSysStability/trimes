@@ -3,7 +3,7 @@ from collections.abc import Callable
 import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
-from icecream import ic
+from trimes._optional import ic
 
 
 def transform_time_series(ts: pd.DataFrame, transform: Callable) -> pd.DataFrame:
@@ -94,13 +94,17 @@ def frobenius_matrix_symcomp() -> ArrayLike:
 
 
 def inverse_frobenius_matrix_symcomp() -> ArrayLike:
-    """Inverse Frobenius matrix to transfom from 012 to abc
+    """Inverse Frobenius matrix to transfom from 012 to abc.
+
+    The exact inverse of :func:`frobenius_matrix_symcomp` (no ``1/3`` factor --
+    that factor sits on the forward transform only), so
+    ``symmetrical_components_2_abc(abc_2_symmetrical_components(x)) == x``.
 
     Returns:
         ArrayLike: Inverse Frobenius matrix
     """
     a = np.exp(2 / 3 * np.pi * 1j)
-    return 1 / 3 * np.array([[1, 1, 1], [1, a * a, a], [1, a, a * a]])
+    return np.array([[1, 1, 1], [1, a * a, a], [1, a, a * a]])
 
 
 def abc_2_symmetrical_components(abc: np.array) -> ArrayLike:

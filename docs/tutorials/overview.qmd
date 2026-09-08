@@ -18,3 +18,9 @@ This [tutorial](time_series_generation.qmd) covers the generation of time series
 
 # Signal Processing
 This [tutorial](signal_processing.qmd) covers the application of signal processing methods to time series data. It includes examples of filtering, Fourier analysis, and other common signal processing techniques.
+
+# Analytic Signals
+This [tutorial](analytic_signals.qmd) covers `trimes.synchrophasor`: test signals that carry their own analytical ground truth (amplitude, frequency and phase as callables), the `AnalyticSignal` object and its `ground_truth` / `phasor` / `rocof` output, ready-made generators (steady state, modulation, frequency ramp, magnitude / phase step) and phase-continuous concatenation. This is the basis for benchmarking phasor, frequency and ROCOF estimators.
+
+# Synchrophasor Compliance Testing
+This [tutorial](synchrophasor_tests.qmd) builds the IEC/IEEE 60255-118-1:2018 test matrix (`trimes.synchrophasor.conditions`), runs an estimator against it and produces a pass / fail compliance table with `trimes.synchrophasor.metrics` (TVE / FE / RFE, `summary`, `compliance`). It also shows parameter sweeps, three-phase tests and `concat_segments` scenarios.

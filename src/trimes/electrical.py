@@ -5,7 +5,7 @@ Calculate quantities of electric power systems.
 import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
-from icecream import ic
+from trimes._optional import ic
 
 from trimes.root_mean_square import rms_rolling, rms_rolling_variable_window
 from trimes.base import resample
@@ -17,8 +17,6 @@ from trimes.signal_processing import (
     average_rolling_variable_window,
     average_rolling,
 )
-
-import matplotlib.pyplot as plt
 
 
 def get_apparent_power_symmetrical_components(

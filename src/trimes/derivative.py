@@ -1,7 +1,14 @@
 import pandas as pd
 import numpy as np
-from scipy.signal import savgol_filter
-from icecream import ic
+
+try:
+    from scipy.signal import savgol_filter
+except ModuleNotFoundError as _exc:  # pragma: no cover - depends on env
+    raise ModuleNotFoundError(
+        "trimes.derivative needs scipy; install it with: pip install 'trimes[dsp]'"
+    ) from _exc
+
+from trimes._optional import ic
 
 from trimes.base import apply_to_columns
 from trimes.signal_processing import average_rolling

@@ -5,8 +5,7 @@ from typing import Union
 import pandas as pd
 import numpy as np
 from numpy.typing import ArrayLike
-from scipy.optimize import minimize_scalar
-from icecream import ic
+from trimes._optional import ic
 
 
 from trimes.base import (
@@ -34,10 +33,10 @@ def extend_ts(
     ts_extended_np = extend_np(ts.to_numpy(), n, mode)
     if n > 0:
         extension = ts.index[0] - ts.index[n] + ts.index[:n]
-        index = np.concat((extension, ts.index))
+        index = np.concatenate((extension, ts.index))
     else:
         extension = ts.index[-1] - ts.index[n - 1] + ts.index[n:]
-        index = np.concat((ts.index, extension))
+        index = np.concatenate((ts.index, extension))
     ts_extended = pd.DataFrame(ts_extended_np, index=index, columns=ts.columns)
     ts_extended.index.name = ts.index.name
     return ts_extended.squeeze()
@@ -95,6 +94,12 @@ def get_angle(x: ArrayLike, **kwargs) -> float:
     Returns:
         float: angle [rad]
     """
+    try:
+        from scipy.optimize import minimize_scalar
+    except ModuleNotFoundError as exc:  # pragma: no cover - depends on env
+        raise ModuleNotFoundError(
+            "get_angle needs scipy; install it with: pip install 'trimes[dsp]'"
+        ) from exc
     f = lambda y, args: -trimes.fourier.get_fourier_coef_real(args, angle=y)
     opt_res = minimize_scalar(f, args=(x), bounds=(-np.pi, np.pi), **kwargs)
     return opt_res.x

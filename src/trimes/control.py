@@ -1,12 +1,19 @@
-import control
-import pandas as pd
-import matplotlib.pyplot as plt
-from icecream import ic
+try:
+    import control
+except ModuleNotFoundError as _exc:  # pragma: no cover - depends on env
+    raise ModuleNotFoundError(
+        "trimes.control needs the optional 'control' package. "
+        "Install it with: pip install 'trimes[control]'"
+    ) from _exc
 
-from trimes.plots import (
+import pandas as pd
+
+from trimes._optional import ic
+from trimes.plots import (  # raises a helpful error if matplotlib is missing
     add_point_to_plot,
     add_vertical_line_to_plot,
 )
+import matplotlib.pyplot as plt
 
 
 def step_info_series(

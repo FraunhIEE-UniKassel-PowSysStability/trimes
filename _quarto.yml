@@ -32,6 +32,8 @@ website:
         - docs/tutorials/time_series_comparison.qmd
         - docs/tutorials/time_series_generation.qmd
         - docs/tutorials/signal_processing.qmd
+        - docs/tutorials/analytic_signals.qmd
+        - docs/tutorials/synchrophasor_tests.qmd
          
 format:
   html:

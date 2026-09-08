@@ -6,15 +6,16 @@ trimes (transient time series) is a python package for transient time series dat
 
 trimes provides functionality for pandas DataFrames (in the format mentioned above) for the following use cases:
 
-- get data points 
+- get data points
 - interpolation
 - resampling
-- regression 
+- regression
 - signal generation (harmonics, symmetrical components)
 - comparison of times series (difference, boundaries, envelopes)
 - metrics (e.g. root mean squared error)
 - step response analysis
 - plotting
+- analytic test signals with closed-form ground truth, the IEC/IEEE 60255-118-1:2018 test matrix and TVE / FE / RFE compliance metrics (`trimes.synchrophasor`), for benchmarking phasor / frequency / ROCOF estimators
 
 and more.
 
@@ -24,4 +25,18 @@ Have a look at the [tutorials](tutorials/overview.qmd) to get started.
 
 ```
 pip install trimes
+```
+
+The core (`import trimes`, `trimes.base`, `trimes.synchrophasor`) needs only
+numpy and pandas. Heavier functionality is behind optional extras:
+
+| extra | pulls in | enables |
+|-------|----------|---------|
+| `trimes[viz]` | matplotlib | `trimes.plots`, `PeriodicSignal.plot*` |
+| `trimes[dsp]` | scipy | `trimes.fft`, `.filter`, `.derivative`, `signal_processing.get_angle` |
+| `trimes[control]` | python-control, icecream | `trimes.control` (step-response info) |
+| `trimes[all]` | all of the above | everything |
+
+```
+pip install "trimes[all]"
 ```

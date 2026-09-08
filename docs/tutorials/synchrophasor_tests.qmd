@@ -1,0 +1,248 @@
+---
+title: Synchrophasor Compliance Testing
+toc: true
+number-sections: true
+mainfont: Arial
+format:
+  html: default
+jupyter: python3
+---
+
+
+```{python}
+#| echo: false
+#| output: false
+%load_ext autoreload
+%autoreload 2
+import sys
+sys.path.append(r"..\..\src")  # local path to trimes
+```
+
+This tutorial builds the **IEC/IEEE 60255-118-1:2018** test matrix with
+`trimes.synchrophasor`, runs an estimator against it and produces a
+pass / fail compliance table. It builds on the
+[analytic signals tutorial](analytic_signals.qmd), which introduces the
+`AnalyticSignal` object.
+
+```{python}
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+
+from trimes.synchrophasor import conditions, metrics, limits
+from trimes.synchrophasor.plot import plot_waveform, plot_errors, plot_sweep_heatmap
+
+plt.rcParams.update({"axes.grid": True})
+FS = 10_000.0  # waveform sampling rate [Hz]
+```
+
+# Test conditions
+
+Every function in `trimes.synchrophasor.conditions` returns an `AnalyticSignal`
+whose `metadata` carries the test id, the performance class and the limits that
+apply. The `*_sweep` helpers cover the standard's full parameter range.
+
+```{python}
+ramp = conditions.frequency_ramp(FS, "P")
+print("test  :", ramp.metadata["test"])
+print("class :", ramp.metadata["class"])
+print("limits:", ramp.metadata["limits"])
+print("ROCOF :", ramp.metadata["rocof"], "Hz/s")
+print("exclusion windows:", ramp.metadata["exclusion"])
+
+fig, ax = plt.subplots(figsize=(8, 3))
+plot_waveform(ramp, ax=ax)
+```
+
+The class limit tables are module constants (values from the 2018 standard,
+Tables 2-9):
+
+```{python}
+pd.DataFrame(limits.P_CLASS_LIMITS).T[["tve", "fe", "rfe"]]
+```
+
+Several limits are reporting-rate dependent -- the standard states them as
+formulas, not fixed numbers -- so `limits` also exposes functions:
+
+```{python}
+Fs = 50.0
+print("M frequency range      :", limits.frequency_range_hz("M", Fs), "Hz")
+print("P modulation limits    :", limits.modulation_error_limits("P", Fs))
+print("M modulation limits    :", limits.modulation_error_limits("M", Fs))
+print("M ramp exclusion (f0=50):", round(limits.ramp_exclusion_s("M", Fs, 50.0), 4), "s")
+print("M step response time   :", round(limits.step_response_time_s("M", Fs, 50.0), 4), "s")
+```
+
+The `conditions.*` generators stamp the applicable values into each signal's
+`metadata["limits"]`, so `compliance` picks them up automatically.
+
+# A reference estimator
+
+`trimes` ships the analysis layer, not estimators. Here is a minimal
+sliding-window estimator built on `trimes.phasor.estimate_frequency` (an
+enhanced interpolated-DFT frequency/phasor estimator); a real PMU estimator
+plugs into the metrics the same way -- it just has to return a DataFrame with
+`phasor`, `frequency` and `rocof` columns on a time index.
+
+```{python}
+from trimes.phasor import estimate_frequency
+from trimes.synchrophasor.util import wrap_pi, rms_phasor
+
+
+def sliding_estimator(signal, *, nominal=50.0, window_cycles=4.0, hop_cycles=1.0):
+    """Report a phasor / frequency / ROCOF at each window centre."""
+    x = signal.signal.to_numpy()
+    t = signal.time
+    fs = 1.0 / (t[1] - t[0])
+    n = int(round(window_cycles / nominal * fs))
+    hop = max(1, int(round(hop_cycles / nominal * fs)))
+
+    rows = []
+    prev_f = prev_tc = None
+    for start in range(0, len(x) - n + 1, hop):
+        segment = pd.DataFrame(
+            {"v": x[start : start + n]},
+            index=pd.Index(t[start : start + n], name="time"),
+        )
+        est = estimate_frequency(segment, nominal=nominal).iloc[0]
+        tc = 0.5 * (t[start] + t[start + n - 1])
+        f, amp, phi_start = float(est["frequency"]), float(est["amplitude"]), float(est["phase"])
+        # advance the phase to the window centre and reference it to nominal
+        phi = wrap_pi(phi_start + 2 * np.pi * f * (tc - t[start]) - 2 * np.pi * nominal * tc)
+        rocof = 0.0 if prev_f is None else (f - prev_f) / (tc - prev_tc)
+        rows.append((tc, f, amp, rms_phasor(amp, phi), rocof))
+        prev_f, prev_tc = f, tc
+
+    tc, f, amp, phasor, rocof = zip(*rows)
+    return pd.DataFrame(
+        {"frequency": f, "amplitude": amp, "phasor": phasor, "rocof": rocof},
+        index=pd.Index(tc, name="time"),
+    )
+```
+
+# One condition, end to end
+
+```{python}
+mod = conditions.modulation(FS, "P", reporting_rate=50.0, duration=1.0)
+trace = sliding_estimator(mod)
+
+axes = plot_errors(trace, mod)
+axes[0].set_title("modulation, P class")
+```
+
+`metrics.summary` aggregates the per-frame errors, excluding frames around any
+transition (a frequency ramp brings its own `exclusion` windows):
+
+```{python}
+summary = metrics.summary(trace, mod, exclude_around_transitions=0.05)
+summary
+```
+
+```{python}
+metrics.compliance(summary, mod.metadata)
+```
+
+# The full matrix
+
+```{python}
+matrix = {
+    "frequency_range": lambda cls: conditions.frequency_range(FS, cls, duration=1.0),
+    "magnitude_low": lambda cls: conditions.magnitude(FS, cls, level=0.2, duration=1.0),
+    "harmonic_50": lambda cls: conditions.single_harmonic(FS, cls, order=50, duration=1.0),
+    "modulation": lambda cls: conditions.modulation(FS, cls, reporting_rate=50.0, duration=1.0),
+    # rocof override just to keep the wide M-class ramp short for this demo
+    "frequency_ramp": lambda cls: conditions.frequency_ramp(FS, cls, rocof=4.0),
+    "magnitude_step": lambda cls: conditions.magnitude_step(FS, cls, duration=1.0),
+    "phase_step": lambda cls: conditions.phase_step(FS, cls, duration=1.0),
+}
+
+records = []
+for name, build in matrix.items():
+    for cls in ("P", "M"):
+        signal = build(cls)
+        trace = sliding_estimator(signal)
+        summary = metrics.summary(trace, signal, exclude_around_transitions=0.06)
+        table = metrics.compliance(summary, signal.metadata)
+        records.append(
+            {
+                "test": name,
+                "class": cls,
+                "max_TVE_%": round(summary["max_tve"], 3),
+                "max_FE_Hz": round(summary["max_fe"], 4),
+                "max_RFE_Hz_s": round(summary["max_rfe"], 3),
+                "pass": bool(table["pass"].all()) if not table.empty else None,
+            }
+        )
+
+pd.DataFrame(records).set_index(["test", "class"])
+```
+
+# A parameter sweep
+
+```{python}
+sweep = conditions.frequency_range_sweep(FS, "M", step=1.0, duration=1.0)
+rows = []
+for signal in sweep:
+    trace = sliding_estimator(signal)
+    s = metrics.summary(trace, signal)
+    rows.append({"fdev_Hz": signal.metadata["fdev"], "max_TVE_%": s["max_tve"]})
+
+sweep_table = pd.DataFrame(rows).set_index("fdev_Hz")
+sweep_table.plot(marker="o", legend=False, ylabel="max TVE [%]", title="M class, frequency range")
+```
+
+`plot_sweep_heatmap` renders a `parameter x method` table -- populate the
+columns with several estimators to compare them at a glance.
+
+```{python}
+heat = pd.DataFrame(
+    {"e-IpDFT": sweep_table["max_TVE_%"]},
+    index=[f"{d:+g} Hz" for d in sweep_table.index],
+)
+fig, ax = plt.subplots(figsize=(3, 5))
+plot_sweep_heatmap(heat, ax=ax, cbar_label="max TVE [%]")
+```
+
+# Three-phase and concatenated tests
+
+`three_phase` expands a positive-sequence `AnalyticSignal` into an unbalanced,
+harmonic-rich abc set while keeping the positive-sequence truth:
+
+```{python}
+from trimes.synchrophasor import three_phase, steady_state
+
+abc, truth = three_phase(
+    steady_state(FS, amplitude=1.0, duration=0.1),
+    negative=0.05,
+    harmonics={5: 0.05, 7: 0.03},
+    noise=0.005,
+)
+pd.DataFrame(abc).plot(title="three-phase test waveform")
+```
+
+`concat_segments` composes a steady -> event -> recovery scenario with the
+fundamental phase carried across every boundary:
+
+```{python}
+from trimes.synchrophasor import concat_segments
+
+scenario = concat_segments(
+    [
+        (0.3, {"frequency": 50.0}),
+        (0.4, {"rocof": -2.0}),                # frequency dips
+        (0.3, {"frequency": 49.2, "amplitude": 0.9}),
+    ],
+    fs=FS,
+    nominal=50.0,
+    jumps={2: {"phase_deg": -15.0}},           # angle step entering recovery
+)
+
+t = scenario.time
+fig, ax = plt.subplots(2, 1, sharex=True, figsize=(8, 4))
+ax[0].plot(t, scenario.signal.to_numpy()); ax[0].set_ylabel("signal")
+ax[1].plot(t, scenario.frequency(t));      ax[1].set_ylabel("frequency [Hz]")
+for a in ax:
+    for b in scenario.metadata["transition_times"]:
+        a.axvline(b, color="grey", lw=0.8)
+scenario.metadata["transition_times"]
+```

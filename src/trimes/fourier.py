@@ -3,7 +3,7 @@ from typing import Union
 import pandas as pd
 import numpy as np
 from numpy.typing import ArrayLike
-from icecream import ic
+from trimes._optional import ic
 
 from trimes.base import (
     create_pandas_series_or_frame_with_same_columns_and_index,
@@ -54,7 +54,13 @@ def get_fourier_coef_rolling(
         )  # first window where time_window fits in ts
         get_samples_for_window = lambda idx, col: resample(
             ts.iloc[:, col],
-            np.linspace(time[idx] - time_windows[idx], time[idx], samples_per_window),
+            np.linspace(
+                time[idx]
+                - time_windows[idx]
+                + 0 * time_windows[idx] / samples_per_window,
+                time[idx] - time_windows[idx] / samples_per_window,
+                samples_per_window,
+            ),
         ).to_numpy()
     if pad_width is None:
         pad_width = (index_first_window, 0)
@@ -87,6 +93,9 @@ def get_fourier_coef_rolling(
 def get_fourier_coef_real(x: ArrayLike, k: int = 1, angle: float = 0.0) -> float:
     """Get the real part of the Fourier coefficient.
 
+    'x' is assumed to span exactly one period of the fundamental, so the k-th
+    harmonic completes 'k' full cycles over the 'len(x)' samples.
+
     Args:
         x (ArrayLike): samples
         k (int, optional): harmonic number. Defaults to 1.
@@ -95,14 +104,18 @@ def get_fourier_coef_real(x: ArrayLike, k: int = 1, angle: float = 0.0) -> float
     Returns:
         float: Real part of Fourier coefficient
     """
+    n = len(x)
     cos = np.cos(
-        np.linspace(angle, k * 2 * np.pi + angle - 2 * np.pi / len(x), k * len(x))
+        np.linspace(angle, k * 2 * np.pi + angle - k * 2 * np.pi / n, n)
     )
     return np.mean(cos * x)
 
 
 def get_fourier_coef_imag(x: ArrayLike, k: int = 1, angle: float = 0.0) -> float:
     """Get the imaginary part of the Fourier coefficient.
+
+    'x' is assumed to span exactly one period of the fundamental, so the k-th
+    harmonic completes 'k' full cycles over the 'len(x)' samples.
 
     Args:
         x (ArrayLike): samples
@@ -112,7 +125,8 @@ def get_fourier_coef_imag(x: ArrayLike, k: int = 1, angle: float = 0.0) -> float
     Returns:
         float: Imaginary part of Fourier coefficient
     """
+    n = len(x)
     sin = -np.sin(
-        np.linspace(angle, k * 2 * np.pi + angle - 2 * np.pi / len(x), k * len(x))
+        np.linspace(angle, k * 2 * np.pi + angle - k * 2 * np.pi / n, n)
     )
     return np.mean(sin * x)

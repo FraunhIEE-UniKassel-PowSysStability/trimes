@@ -1,14 +1,28 @@
 from collections.abc import Callable
 from numbers import Number
+from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
-from icecream import ic
 
+from trimes._optional import ic
+from trimes.synchrophasor.signal import AnalyticSignal, _segment_truth_fns
 from trimes.base import superpose_series, get_index
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
+
+def _pyplot():
+    """Import :mod:`matplotlib.pyplot` lazily (matplotlib is the ``viz`` extra)."""
+    try:
+        import matplotlib.pyplot as plt
+    except ModuleNotFoundError as exc:  # pragma: no cover - depends on env
+        raise ModuleNotFoundError(
+            "plotting needs matplotlib; install it with: pip install 'trimes[viz]'"
+        ) from exc
+    return plt
 
 
 class PeriodicSignal:
@@ -27,6 +41,10 @@ class PeriodicSignal:
         "time"
         self.func: Callable = func
         "function to create periodic signals (e.g. np.sin)"
+        self._f_spec = f
+        self._mag_spec = mag
+        self._offset_spec = offset
+        "original f/mag/offset arguments, kept for the analytic-truth model"
         if isinstance(f, tuple):
             f = np.linspace(f[0], f[1], len(self.t))
         self.f: ArrayLike = f
@@ -41,6 +59,45 @@ class PeriodicSignal:
         "y offset"
         self.phi: float = phi
         "initial angle"
+
+    def analytic_signal(self, nominal: float = 50.0) -> AnalyticSignal:
+        """Wrap this signal in a :class:`~trimes.synchrophasor.AnalyticSignal`.
+
+        Builds exact closed-form ``amplitude`` / ``frequency`` / ``total_phase``
+        callables from the constructor arguments. Supported: a scalar frequency
+        or a ``(f_start, f_end)`` linear ramp, a scalar magnitude or a
+        ``(m_start, m_end)`` ramp, zero offset and ``func=np.cos``. Anything
+        else (an explicit ``f``/``mag`` array) raises ``ValueError`` -- it has
+        no closed form.
+
+        Parameters
+        ----------
+        nominal : float, default 50.0
+            Nominal frequency in Hz, the phase reference of the returned
+            object.
+
+        Returns
+        -------
+        AnalyticSignal
+            Wrapping :meth:`get_signal_series`. ``metadata["transition_times"]``
+            is empty (a single ``PeriodicSignal`` is continuous).
+
+        Notes
+        -----
+        For a scalar frequency the wrapped samples equal the truth to floating
+        point. For a frequency ramp the wrapped samples (built by the existing
+        cumulative-sum integrator) approximate the exact closed form to
+        ``O(dt**2)`` per step; the callables stay exact.
+        """
+        amplitude_fn, frequency_fn, total_phase_fn, _, _ = _segment_truth_fns(self)
+        return AnalyticSignal(
+            signal=self.get_signal_series(),
+            amplitude_fn=amplitude_fn,
+            frequency_fn=frequency_fn,
+            total_phase_fn=total_phase_fn,
+            nominal=float(nominal),
+            metadata={"transition_times": []},
+        )
 
     def get_signal(self) -> ArrayLike:
         return self.mag * self.func(self.get_angle_over_time()) + self.offset
@@ -88,7 +145,7 @@ class PeriodicSignal:
         series = self.get_signal_series()
         series.plot(**kwargs)
 
-    def plot_with_attributes(self, attributes: list[str] | None = None) -> list[Axes]:
+    def plot_with_attributes(self, attributes: list[str] | None = None) -> "list[Axes]":
         """Plot signal with attributes
 
         Args:
@@ -97,6 +154,7 @@ class PeriodicSignal:
         Returns:
             list[Axes]: Axes of plot.
         """
+        plt = _pyplot()
         attr = self.get_signal_attributes_over_time(attributes)
         fig, axes = plt.subplots(nrows=attr.shape[1] + 1, ncols=1)
         fig.tight_layout()
@@ -204,6 +262,122 @@ def superimpose_and_concat_periodic_signals(
         return pd.concat(phase_signals, axis=1)
 
 
+def superimpose_and_concat_analytic_signal(
+    signals: list[list[PeriodicSignal]],
+    *,
+    num_phases: int = 1,
+    angle_continuation: bool = True,
+    angular_jump: None | ArrayLike = None,
+    nominal: float = 50.0,
+) -> AnalyticSignal:
+    """Concatenate an array of periodic signals and keep the analytic truth.
+
+    The waveform is exactly :func:`superimpose_and_concat_periodic_signals`
+    (same arguments, same result). The analytic truth is built from the
+    **fundamental of each row** -- ``signals[n][0]`` -- with fundamental phase
+    carried across every boundary (plus any ``angular_jump``), so ``phasor`` /
+    ``frequency`` / ``rocof`` truth is available at arbitrary instants.
+
+    Every fundamental must be analytically tractable (see
+    :meth:`PeriodicSignal.analytic_signal`). The remaining signals in a row
+    (harmonics, interharmonics, noise-like tones) shape the waveform but not
+    the truth.
+
+    Parameters
+    ----------
+    signals : list[list[PeriodicSignal]]
+        Rows are superimposed; the resulting segments are concatenated.
+    num_phases : int, default 1
+        Number of phases; the truth is always the positive-sequence (phase a)
+        fundamental.
+    angle_continuation : bool, default True
+        Forwarded to :func:`superimpose_and_concat_periodic_signals`.
+    angular_jump : array_like, optional
+        Deliberate fundamental phase jump (radians) at each interior boundary;
+        length ``len(signals) - 1``. Forwarded to the waveform builder and
+        applied to the truth.
+    nominal : float, default 50.0
+        Phase reference in Hz.
+
+    Returns
+    -------
+    AnalyticSignal
+        Wrapping the concatenated Series (``num_phases == 1``) or DataFrame.
+        ``metadata["transition_times"]`` lists the boundaries that carry a jump
+        or a change of fundamental frequency.
+    """
+    rows = [list(row) for row in signals]
+    if not rows or any(not row for row in rows):
+        raise ValueError("'signals' must be a non-empty list of non-empty rows")
+
+    waveform = superimpose_and_concat_periodic_signals(
+        rows,
+        num_phases=num_phases,
+        angle_continuation=angle_continuation,
+        angular_jump=angular_jump,
+    )
+
+    fundamentals = [row[0] for row in rows]
+    n_seg = len(fundamentals)
+    if angular_jump is None:
+        jumps = np.zeros(max(n_seg - 1, 0))
+    else:
+        jumps = np.asarray(angular_jump, dtype=float).reshape(-1)
+        if jumps.shape != (n_seg - 1,):
+            raise ValueError(
+                f"angular_jump must have length {n_seg - 1} (segments - 1)"
+            )
+
+    # (t_start, t_end, amplitude_fn, frequency_fn, total_phase_fn) per segment
+    segments: list[tuple] = []
+    next_starts: list[float] = []
+    transition_times: list[float] = []
+    phi_carry = float(fundamentals[0].phi)
+    for i, fund in enumerate(fundamentals):
+        amp_fn, freq_fn, phase_fn, t_start, t_end = _segment_truth_fns(
+            fund, phi_override=phi_carry
+        )
+        segments.append((t_start, t_end, amp_fn, freq_fn, phase_fn))
+        if i + 1 < n_seg:
+            nxt = fundamentals[i + 1]
+            next_start = float(np.asarray(nxt.t, dtype=float)[0])
+            next_starts.append(next_start)
+            phi_end = float(np.atleast_1d(phase_fn(np.array([next_start])))[0])
+            jump = float(jumps[i])
+            phi_carry = phi_end + jump
+            f_left = float(np.atleast_1d(freq_fn(np.array([next_start])))[0])
+            _, next_freq_fn, _, _, _ = _segment_truth_fns(nxt)
+            f_right = float(np.atleast_1d(next_freq_fn(np.array([next_start])))[0])
+            if jump != 0.0 or not np.isclose(f_left, f_right):
+                transition_times.append(next_start)
+
+    def _piecewise(component: int) -> Callable:
+        def evaluate(times):
+            times = np.asarray(times, dtype=float)
+            flat = np.atleast_1d(times)
+            out = np.empty(flat.shape, dtype=float)
+            for idx, segment in enumerate(segments):
+                lo = -np.inf if idx == 0 else next_starts[idx - 1]
+                hi = np.inf if idx == n_seg - 1 else next_starts[idx]
+                mask = (flat >= lo) & (flat < hi)
+                if np.any(mask):
+                    out[mask] = np.asarray(
+                        segment[component](flat[mask]), dtype=float
+                    )
+            return out.reshape(times.shape) if times.ndim else out[0]
+
+        return evaluate
+
+    return AnalyticSignal(
+        signal=waveform,
+        amplitude_fn=_piecewise(2),
+        frequency_fn=_piecewise(3),
+        total_phase_fn=_piecewise(4),
+        nominal=float(nominal),
+        metadata={"transition_times": sorted(set(transition_times))},
+    )
+
+
 def get_attributes_of_superimposed_and_concatenated_signals_over_time(
     signals: list[list[PeriodicSignal]],
     columns: list[int] | None = None,
@@ -263,7 +437,7 @@ def make_monotonously_increasing(t: ArrayLike, sample_time: float) -> ArrayLike:
         ArrayLike: monotonously increasing time
     """
     t = np.array(t, dtype=float)
-    diff_t_is_zero = np.concat([[False], np.diff(t) <= 0])
+    diff_t_is_zero = np.concatenate([[False], np.diff(t) <= 0])
     t[diff_t_is_zero] = t[diff_t_is_zero] + sample_time
     return t
 
@@ -364,12 +538,12 @@ def create_ts_from_dict_with_varying_length(
     time = d[time_label]
     df.index = time
     df.index.name = time_label
-    del d[time_label]
     for variable, values in d.items():
-        if len(values) < len(time):
-            diff_len = len(time) - len(values)
-            values = np.concat([values, np.repeat(values[-1], diff_len)])
-        df[variable] = values
+        if variable != time_label:
+            if len(values) < len(time):
+                diff_len = len(time) - len(values)
+                values = np.concatenate([values, np.repeat(values[-1], diff_len)])
+            df[variable] = values
     return df
 
 
