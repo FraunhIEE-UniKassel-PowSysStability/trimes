@@ -18,11 +18,16 @@ import sys
 sys.path.append(r"..\..\src")  # local path to trimes
 ```
 
-This tutorial covers `trimes.synchrophasor` -- test signals that carry their own
-**analytical ground truth**. The motivating use case is benchmarking phasor,
-frequency and ROCOF estimators (an estimator reports a value; we need to know
-the exact value it *should* have reported), but the object is useful whenever
-you want a signal whose amplitude, frequency and phase you know in closed form.
+This tutorial covers test signals that carry their own **analytical ground
+truth**. The motivating use case is benchmarking phasor, frequency and ROCOF
+estimators (an estimator reports a value; we need to know the exact value it
+*should* have reported), but the object is useful whenever you want a signal
+whose amplitude, frequency and phase you know in closed form.
+
+The `AnalyticSignal` object and the `build_analytic_signal` factory live in
+`trimes.analytic` (numpy + pandas only). `trimes.synchrophasor` builds the
+IEC/IEEE 60255-118-1 benchmark layer -- generators, the compliance test matrix,
+TVE / FE / RFE metrics -- on top of it, and re-exports both names.
 
 # The `AnalyticSignal` object
 
@@ -120,7 +125,7 @@ three truth callables and it samples the waveform straight from them
 noise), so the samples are exactly consistent with the truth.
 
 ```{python}
-from trimes.synchrophasor import build_analytic_signal
+from trimes.analytic import build_analytic_signal
 
 TWO_PI = 2 * np.pi
 f0 = 50.0

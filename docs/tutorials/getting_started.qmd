@@ -205,3 +205,55 @@ plt.legend(loc="upper center")
 plt.grid()
 ```
 
+# The `.trimes` accessor
+
+The most common helpers are also available as methods on a `Series` or
+`DataFrame` through the `trimes` accessor, which is registered as soon as you
+`import trimes`. This often reads more naturally at the call site than the free
+functions:
+
+```{python}
+df.trimes.sample_at(0.55)
+```
+
+```{python}
+df.trimes.between(5, 6)                 # like trimes.get_between(df, 5, 6)
+df.trimes.between(5.02, 6.02, interp=True)  # interpolate the endpoints
+df.trimes.delta(0, 0.5)                 # like trimes.get_delta(df, 0, 0.5)
+df.trimes.resample(np.arange(0, 10.001, 1))
+```
+
+It also exposes a few properties and the rolling helpers. Our `df` has a
+slightly jittered time vector, so it is *not* uniformly sampled:
+
+```{python}
+print("duration:", df.trimes.duration)
+print("uniformly sampled:", df.trimes.is_uniform)
+```
+
+`sampling_rate` therefore needs a uniform grid first; `resample` gives us one:
+
+```{python}
+df_uniform = df.trimes.resample(1e-3)
+print("sampling rate:", round(df_uniform.trimes.sampling_rate, 1))
+
+df_uniform["a"].trimes.rms(samples_per_window=500).plot(title="rolling RMS of a")
+plt.grid()
+```
+
+# Submodules
+
+Only `trimes.base` (and the `AnalyticSignal` primitive) is re-exported at the
+top level. Everything else lives in a submodule -- `trimes.comparison`,
+`trimes.metrics`, `trimes.fft`, `trimes.phasor`, `trimes.signal_generation`,
+`trimes.synchrophasor`, ... -- and each is reachable as an attribute after a
+bare `import trimes`, imported lazily on first use:
+
+```{python}
+spectrum = trimes.fft.amplitude_spectrum(df.trimes.resample(1e-2))
+spectrum.head()
+```
+
+The lazy import means `import trimes` itself only needs numpy and pandas;
+`trimes.fft` pulls in scipy only when you first touch it.
+

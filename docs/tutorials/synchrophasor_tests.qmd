@@ -86,7 +86,7 @@ plugs into the metrics the same way -- it just has to return a DataFrame with
 
 ```{python}
 from trimes.phasor import estimate_frequency
-from trimes.synchrophasor.util import wrap_pi, rms_phasor
+from trimes.analytic import wrap_pi, rms_phasor
 
 
 def sliding_estimator(signal, *, nominal=50.0, window_cycles=4.0, hop_cycles=1.0):

@@ -15,9 +15,14 @@ trimes provides functionality for pandas DataFrames (in the format mentioned abo
 - metrics (e.g. root mean squared error)
 - step response analysis
 - plotting
-- analytic test signals with closed-form ground truth, the IEC/IEEE 60255-118-1:2018 test matrix and TVE / FE / RFE compliance metrics (`trimes.synchrophasor`), for benchmarking phasor / frequency / ROCOF estimators
+- FFT / spectra (`trimes.fft`) and a single-tone frequency / amplitude / phase estimator (`trimes.phasor`)
+- analytic test signals with closed-form ground truth (`trimes.analytic`), the IEC/IEEE 60255-118-1:2018 test matrix and TVE / FE / RFE compliance metrics (`trimes.synchrophasor`), for benchmarking phasor / frequency / ROCOF estimators
 
 and more.
+
+Most of these helpers are also available as methods on a Series or DataFrame
+through the `.trimes` accessor, e.g. `df.trimes.resample(1e-3)` or
+`s.trimes.between(0.1, 0.3)` (see the [getting started tutorial](tutorials/getting_started.qmd)).
 
 Have a look at the [tutorials](tutorials/overview.qmd) to get started.
 
@@ -27,8 +32,10 @@ Have a look at the [tutorials](tutorials/overview.qmd) to get started.
 pip install trimes
 ```
 
-The core (`import trimes`, `trimes.base`, `trimes.synchrophasor`) needs only
-numpy and pandas. Heavier functionality is behind optional extras:
+The core -- `import trimes`, the `.trimes` accessor, `trimes.base`,
+`trimes.analytic`, `trimes.phasor` and `trimes.synchrophasor` (its `plot`
+submodule aside) -- needs only numpy and pandas. Heavier functionality is
+behind optional extras:
 
 | extra | pulls in | enables |
 |-------|----------|---------|
@@ -40,3 +47,7 @@ numpy and pandas. Heavier functionality is behind optional extras:
 ```
 pip install "trimes[all]"
 ```
+
+Every submodule is reachable as an attribute after a bare `import trimes`
+(e.g. `trimes.fft.rfft`), imported lazily so the optional dependencies are only
+pulled in when you actually use that submodule.
