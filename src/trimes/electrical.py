@@ -1,48 +1,67 @@
-"""
-Calculate quantities of electric power systems.
+"""Electric-power quantities from time-domain signals.
+
+Instantaneous and window-averaged active / reactive / apparent power for
+three-phase systems, plus power from symmetrical components. Inputs are the
+sampled ``abc`` waveforms (as arrays or DataFrames with one column per phase),
+not phasors.
 """
 
 import numpy as np
-from numpy.typing import ArrayLike
 import pandas as pd
+from numpy.typing import ArrayLike
 
-from trimes.root_mean_square import rms_rolling, rms_rolling_variable_window
 from trimes.base import resample
-from trimes.fourier import (
-    get_fourier_coef_rolling,
-)
+from trimes.fourier import get_fourier_coef_rolling
+from trimes.signal_processing import average_rolling, average_rolling_variable_window
 from trimes.transforms import abc_2_symmetrical_components
-from trimes.signal_processing import (
-    average_rolling_variable_window,
-    average_rolling,
-)
+
+__all__ = [
+    "get_apparent_power_symmetrical_components",
+    "get_active_power_symmetrical_components",
+    "get_reactive_power_symmetrical_components",
+    "get_apparent_power_using_symmetrical_components_and_fourier_coefficients",
+    "get_instantaneous_active_power_3ph",
+    "get_instantaneous_reactive_power_3ph",
+    "get_instantaneous_reactive_power_using_phase_shift_3ph",
+    "get_instantaneous_magnitude_3ph",
+    "get_active_power_average_rolling_3ph",
+    "get_active_power_average_rolling_variable_window_3ph",
+    "get_reactive_power_average_rolling_3ph",
+    "get_reactive_power_average_rolling_variable_window_3ph",
+]
 
 
 def get_apparent_power_symmetrical_components(
     u: ArrayLike, i: ArrayLike, factor: float = 3
 ) -> complex:
-    """Get apparent power from symmetrical components of voltages and currents.
+    """Complex power ``factor * u * conj(i)`` from sequence components.
 
-    Args:
-        u (ArrayLike): Voltage pos., neg. and zero sequence components
-        i (ArrayLike): Current pos., neg. and zero sequence components
-        factor (float, optional): Multiplication factor. Defaults to 3.
+    Parameters
+    ----------
+    u, i : array_like
+        Voltage and current sequence components (positive / negative / zero).
+    factor : float, default 3
+        Scaling factor (``3`` for a per-phase-to-total conversion).
 
-    Returns:
-        ArrayLike: Apparent power
+    Returns
+    -------
+    complex
+        Apparent power (real part active, imaginary part reactive).
     """
     return factor * u * np.conj(i)
 
 
 def get_active_power_symmetrical_components(
     u: ArrayLike, i: ArrayLike, factor: float = 3
-):
+) -> float:
+    """Active power from voltage and current sequence components."""
     return factor * (np.dot(np.real(u), np.real(i)) + np.dot(np.imag(u), np.imag(i)))
 
 
 def get_reactive_power_symmetrical_components(
     u: ArrayLike, i: ArrayLike, factor: float = 3
-):
+) -> float:
+    """Reactive power from voltage and current sequence components."""
     return factor * (-np.dot(np.real(u), np.imag(i)) + np.dot(np.imag(u), np.real(i)))
 
 
@@ -53,71 +72,63 @@ def get_apparent_power_using_symmetrical_components_and_fourier_coefficients(
     time_windows: ArrayLike | None = None,
     return_symmetrical_components: bool = False,
 ) -> ArrayLike:
-    """Get apparent power of symmetrical components
+    """Rolling apparent power of the symmetrical components.
 
-    Steps:
-    - calculate fourier coefficients
-    - calculate symmetrical components of v and i
-    - calculate apparent power
+    For each window: take the fundamental Fourier coefficient of every phase,
+    transform to symmetrical components, then form ``3 * U * conj(I)``.
 
-    Args:
-        u_abc (pd.DataFrame): three-phase voltages
+    Parameters
+    ----------
+    u_abc, i_abc : pandas.DataFrame
+        Three-phase voltages and currents.
+    samples_per_window : int
+        Samples per window (fundamental period) for the Fourier coefficients.
+    time_windows : array_like, optional
+        Per-sample window duration for a drifting period; ``None`` uses a fixed
+        window.
+    return_symmetrical_components : bool, default False
+        Also return the voltage and current sequence components.
 
-        i_abc (pd.DataFrame): three-phase currents
-
-        samples_per_window (int): Samples per window (period) to calculate fourier coefficients
-
-        time_windows (ArrayLike | None, optional): Time windows for fourier coefficient calculation (voltages and currents are resampled for each time window). Defaults to None (no resampling).
-
-        return_symmetrical_components (bool, optional): If True, the sym. comp. of voltages and currents are returned. Defaults to False.
-
-    Returns:
-        ArrayLike: Apparent power of sym. components (+ sym. comp. of v and i if 'return_symmetrical_components' is True)
+    Returns
+    -------
+    array_like
+        The apparent power, or ``(power, u_sequence, i_sequence)`` when
+        ``return_symmetrical_components`` is True.
     """
     if time_windows is not None:
         u_fourier_coef = get_fourier_coef_rolling(
-            u_abc,
-            samples_per_window,
-            time_windows=time_windows,
+            u_abc, samples_per_window, time_windows=time_windows
         )
-
         i_fourier_coef = get_fourier_coef_rolling(
-            i_abc,
-            samples_per_window,
-            time_windows=time_windows,
+            i_abc, samples_per_window, time_windows=time_windows
         )
     else:
-        u_fourier_coef = get_fourier_coef_rolling(
-            u_abc,
-            samples_per_window,
-        )
-        i_fourier_coef = get_fourier_coef_rolling(
-            i_abc,
-            samples_per_window,
-        )
+        u_fourier_coef = get_fourier_coef_rolling(u_abc, samples_per_window)
+        i_fourier_coef = get_fourier_coef_rolling(i_abc, samples_per_window)
 
     u_sym_comp = abc_2_symmetrical_components(u_fourier_coef)
     i_sym_comp = abc_2_symmetrical_components(i_fourier_coef)
 
+    apparent_power = get_apparent_power_symmetrical_components(u_sym_comp, i_sym_comp)
     if not return_symmetrical_components:
-        return get_apparent_power_symmetrical_components(u_sym_comp, i_sym_comp)
-    else:
-        return (
-            get_apparent_power_symmetrical_components(u_sym_comp, i_sym_comp),
-            u_sym_comp,
-            i_sym_comp,
-        )
+        return apparent_power
+    return apparent_power, u_sym_comp, i_sym_comp
 
 
-def get_instantaneous_active_power_3ph(u_abc: ArrayLike, i_abc: ArrayLike) -> ArrayLike:
-    """u_a*i_a + u_b*i_b + u_c*i_c
+def get_instantaneous_active_power_3ph(
+    u_abc: ArrayLike, i_abc: ArrayLike
+) -> ArrayLike:
+    """Instantaneous three-phase active power ``u_a i_a + u_b i_b + u_c i_c``.
 
-    Args:
-        u_abc (ArrayLike): three-phase voltages
-        i_abc (ArrayLike): three-phase currents
+    Parameters
+    ----------
+    u_abc, i_abc : array_like
+        Three-phase voltages and currents (one column per phase).
 
-    Returns:
-        ArrayLike: _description_
+    Returns
+    -------
+    array_like
+        Instantaneous power, one value per sample.
     """
     return np.sum(u_abc * i_abc, axis=1)
 
@@ -125,14 +136,20 @@ def get_instantaneous_active_power_3ph(u_abc: ArrayLike, i_abc: ArrayLike) -> Ar
 def get_instantaneous_reactive_power_3ph(
     u_abc: ArrayLike, i_abc: ArrayLike
 ) -> ArrayLike:
-    """From PowerFactory's 'Technical Reference - Common Result Variables for Terminals and Elements (EMT Simulation)'.
+    """Instantaneous three-phase reactive power.
 
-    Args:
-        u_abc (ArrayLike): three-phase voltages
-        i_abc (ArrayLike): three-phase currents
+    Follows PowerFactory's *Technical Reference - Common Result Variables for
+    Terminals and Elements (EMT Simulation)*.
 
-    Returns:
-        ArrayLike: instantaneous reactive power.
+    Parameters
+    ----------
+    u_abc, i_abc : array_like
+        Three-phase voltages and currents (one column per phase).
+
+    Returns
+    -------
+    array_like
+        Instantaneous reactive power, one value per sample.
     """
     return (
         1
@@ -149,19 +166,24 @@ def get_instantaneous_reactive_power_using_phase_shift_3ph(
     u_abc: pd.DataFrame,
     i_abc: pd.DataFrame,
     periods: float | ArrayLike,
-) -> ArrayLike:
-    """
-    Calculate instantaneous reactive power using 90 degree phase shift of the current.
+) -> pd.Series:
+    """Instantaneous reactive power via a quarter-period current phase shift.
 
-    From 'The Measurement of Reactive Energy in Polluted Distribution Power Systems: An Analysis of the Performance of Commercial Static Meters'
+    Follows *The Measurement of Reactive Energy in Polluted Distribution Power
+    Systems: An Analysis of the Performance of Commercial Static Meters*.
 
-    Args:
-        u_abc (pd.DataFrame): three-phase voltages
-        i_abc (pd.DataFrame): three-phase currents
-        periods (ArrayLike): Duration of one period in seconds or array of durations (same length as u_abc/i_abc) if periods are not constant.
+    Parameters
+    ----------
+    u_abc, i_abc : pandas.DataFrame
+        Three-phase voltages and currents.
+    periods : float or array_like
+        Fundamental period in seconds -- a scalar, or one value per sample if
+        the period varies.
 
-    Returns:
-        ArrayLike: instantaneous reactive power.
+    Returns
+    -------
+    pandas.Series
+        Instantaneous reactive power, indexed by the shifted time.
     """
     t_i_abc = i_abc.index.values + periods / 4
     i_abc_shifted = resample(i_abc, t_i_abc)
@@ -171,17 +193,21 @@ def get_instantaneous_reactive_power_using_phase_shift_3ph(
 
 
 def get_instantaneous_magnitude_3ph(abc: ArrayLike) -> ArrayLike:
-    """Calculate the instantaneous magnitude of a three-phase signal.
+    """Instantaneous magnitude of a three-phase signal.
 
-        According to “IEEE Std 1459-2010 Standard Definitions for the Measurement
-    of Electric Power Quantities Under Sinusoidal, Nonsinusoidal, Balanced,
-    or Unbalanced Conditions,” 2010.
+    Follows IEEE Std 1459-2010, *Standard Definitions for the Measurement of
+    Electric Power Quantities Under Sinusoidal, Nonsinusoidal, Balanced, or
+    Unbalanced Conditions*.
 
-        Args:
-            abc (ArrayLike): three-phase signal
+    Parameters
+    ----------
+    abc : array_like
+        Three-phase signal (one column per phase).
 
-        Returns:
-            ArrayLike: magnitude
+    Returns
+    -------
+    array_like
+        Magnitude, one value per sample.
     """
     return np.sqrt(
         1
@@ -197,15 +223,19 @@ def get_instantaneous_magnitude_3ph(abc: ArrayLike) -> ArrayLike:
 def get_active_power_average_rolling_3ph(
     u_abc: ArrayLike, i_abc: ArrayLike, samples_per_window: int
 ) -> pd.DataFrame | pd.Series:
-    """Calculate the active power using a rolling window of constant number of samples.
+    """Active power averaged over a fixed rolling window.
 
-    Args:
-        u_abc (ArrayLike): three-phase voltages
-        i_abc (ArrayLike): three-phase currents
-        samples_per_window (int): number of samples per window (e.g. number of samples per period)
+    Parameters
+    ----------
+    u_abc, i_abc : array_like
+        Three-phase voltages and currents.
+    samples_per_window : int
+        Window length in samples (e.g. one fundamental period).
 
-    Returns:
-        pd.DataFrame | pd.Series: active power
+    Returns
+    -------
+    pandas.DataFrame or pandas.Series
+        The averaged active power.
     """
     p_df = pd.DataFrame(get_instantaneous_active_power_3ph(u_abc, i_abc))
     return average_rolling(p_df, samples_per_window=samples_per_window)
@@ -217,18 +247,21 @@ def get_active_power_average_rolling_variable_window_3ph(
     time_windows: ArrayLike,
     samples_per_window: int,
 ) -> pd.DataFrame | pd.Series:
-    """Calculate the active power using a rolling window of variable duration.
+    """Active power averaged over a rolling window of varying duration.
 
-    Voltages and currents are resampled for each time window.
+    Parameters
+    ----------
+    u_abc, i_abc : pandas.DataFrame
+        Three-phase voltages and currents.
+    time_windows : array_like
+        Per-sample window duration (same length as the inputs).
+    samples_per_window : int
+        Number of points each window is resampled to.
 
-    Args:
-        u_abc (ArrayLike): three-phase voltages
-        i_abc (ArrayLike): three-phase currents
-        time_windows (ArrayLike): time periods for the rolling window (same length as u_abc/i_abc)
-        samples_per_window (int): number of samples per window
-
-    Returns:
-        pd.DataFrame | pd.Series: active power
+    Returns
+    -------
+    pandas.DataFrame or pandas.Series
+        The averaged active power.
     """
     p_df = pd.DataFrame(
         get_instantaneous_active_power_3ph(u_abc.to_numpy(), i_abc.to_numpy()),
@@ -242,15 +275,9 @@ def get_active_power_average_rolling_variable_window_3ph(
 def get_reactive_power_average_rolling_3ph(
     u_abc: ArrayLike, i_abc: ArrayLike, samples_per_window: int
 ) -> pd.DataFrame | pd.Series:
-    """Calculate the reactive power using a rolling window of constant number of samples.
+    """Reactive power averaged over a fixed rolling window.
 
-    Args:
-        u_abc (ArrayLike): three-phase voltages
-        i_abc (ArrayLike): three-phase currents
-        samples_per_window (int): number of samples per window (e.g. number of samples per period)
-
-    Returns:
-        pd.DataFrame | pd.Series: reactive power
+    See :func:`get_active_power_average_rolling_3ph` for the arguments.
     """
     p_df = pd.DataFrame(get_instantaneous_reactive_power_3ph(u_abc, i_abc))
     return average_rolling(p_df, samples_per_window=samples_per_window)
@@ -259,21 +286,13 @@ def get_reactive_power_average_rolling_3ph(
 def get_reactive_power_average_rolling_variable_window_3ph(
     u_abc: pd.DataFrame,
     i_abc: pd.DataFrame,
-    time_windows: np.array,
+    time_windows: ArrayLike,
     samples_per_window: int,
 ) -> pd.DataFrame | pd.Series:
-    """Calculate the reactive power using a rolling window of variable duration.
+    """Reactive power averaged over a rolling window of varying duration.
 
-    Voltages and currents are resampled for each time window.
-
-    Args:
-        u_abc (ArrayLike): three-phase voltages
-        i_abc (ArrayLike): three-phase currents
-        time_windows (ArrayLike): time periods for the rolling window (same length as u_abc/i_abc)
-        samples_per_window (int): number of samples per window
-
-    Returns:
-        pd.DataFrame | pd.Series: reactive power
+    See :func:`get_active_power_average_rolling_variable_window_3ph` for the
+    arguments.
     """
     p_df = pd.DataFrame(
         get_instantaneous_reactive_power_3ph(u_abc.to_numpy(), i_abc.to_numpy()),

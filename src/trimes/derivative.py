@@ -1,4 +1,7 @@
-import pandas as pd
+"""Numerical time derivatives of noisy time series (needs scipy -- the
+``dsp`` extra).
+"""
+
 import numpy as np
 
 try:
@@ -8,33 +11,41 @@ except ModuleNotFoundError as _exc:  # pragma: no cover - depends on env
         "trimes.derivative needs scipy; install it with: pip install 'trimes[dsp]'"
     ) from _exc
 
-
-from trimes.base import apply_to_columns
+from trimes.base import FrameOrSeries, apply_to_columns
 from trimes.signal_processing import average_rolling
+
+__all__ = ["diff_moving_avg", "savgol_derivative"]
 
 
 def diff_moving_avg(
-    ts: pd.DataFrame | pd.Series,
+    ts: FrameOrSeries,
     samples_per_window: int,
     sample_time: float,
     pad_mode: str = "constant",
     pad_width: int | tuple[int, int] | None = None,
     **kwargs,
-) -> pd.DataFrame | pd.Series:
-    """Calculate derivate using difference between time steps and moving average filter.
+) -> FrameOrSeries:
+    """Derivative as a finite difference smoothed by a moving average.
 
-    numpy.pad is used for padding (see numpy.org/doc/stable/reference/generated/numpy.pad.html)
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    samples_per_window : int
+        Window length of the moving-average smoothing.
+    sample_time : float
+        Sample step, used to scale the finite difference.
+    pad_mode : str, default "constant"
+        Padding mode for the leading samples, passed to :func:`numpy.pad`.
+    pad_width : int or tuple of int, optional
+        Padding width. Defaults to ``(samples_per_window, 0)``.
+    **kwargs
+        Forwarded to :func:`numpy.pad`.
 
-    Args:
-        ts (pd.DataFrame | pd.Series): time series
-        samples_per_window (int): for moving average
-        sample_time (float): used for calculation of derivative
-        pad_mode (str, optional): pad mode (see numpy docs). Defaults to "constant".
-        pad_width (int | tuple | None, optional): width for padding (see numpy docs). Defaults to None.
-        **kwargs: used in numpy.pad
-
-    Returns:
-        pd.DataFrame | pd.Series: derivative
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        The smoothed derivative.
     """
     index = ts.index.copy(deep=True)
     ts = apply_to_columns(ts, np.diff).divide(sample_time)
@@ -52,31 +63,45 @@ def diff_moving_avg(
 
 
 def savgol_derivative(
-    ts: pd.DataFrame | pd.Series,
+    ts: FrameOrSeries,
     samples_per_window: int,
     sample_time: float,
-    polyorder=2,
+    polyorder: int = 2,
     mode: str = "interp",
     pad_mode: str | None = None,
     pad_width: int | tuple[int, int] | None = None,
     **kwargs,
-) -> pd.DataFrame | pd.Series:
-    """Apply a Savitzky-Golay filter to get derivative. See also SciPy docs (docs.scipy.org/doc/scipy/reference/generated/scipy.signal.savgol_filter.html).
+) -> FrameOrSeries:
+    """Derivative via a Savitzky-Golay filter.
 
-    numpy.pad can be used for padding (see numpy.org/doc/stable/reference/generated/numpy.pad.html).
+    Wraps :func:`scipy.signal.savgol_filter` with ``deriv=1``.
 
-    Args:
-        ts (pd.DataFrame | pd.Series): time series
-        samples_per_window (int): of filter
-        sample_time (float): of ts
-        polyorder (int, optional): of filter. Defaults to 2.
-        mode (str, optional): Used for padding if 'pad_mode' is None. See docs of SciPy's 'savgol_filter'. Defaults to "interp".
-        pad_mode (str | None, , optional): If not None, numpy.pad (see numpy docs) is used instead of the SciPy padding. Defaults to None.
-        pad_width (int | tuple[int, int] | None): Defaults to None.
-        **kwargs: used in numpy.pad
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    samples_per_window : int
+        Filter window length; incremented by one if even (it must be odd).
+    sample_time : float
+        Sample step of ``ts`` (the ``delta`` of the filter).
+    polyorder : int, default 2
+        Polynomial order of the filter.
+    mode : str, default "interp"
+        Edge handling of :func:`scipy.signal.savgol_filter`, used when
+        ``pad_mode`` is None.
+    pad_mode : str, optional
+        If given, discard the filter's edge samples and re-pad with
+        :func:`numpy.pad` in this mode instead.
+    pad_width : int or tuple of int, optional
+        Padding width when ``pad_mode`` is used. Defaults to
+        ``(samples_per_window, 0)``.
+    **kwargs
+        Forwarded to :func:`numpy.pad`.
 
-    Returns:
-        pd.DataFrame | pd.Series: Derivative
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        The derivative.
     """
     if samples_per_window % 2 == 0:  # must be odd
         samples_per_window += 1
