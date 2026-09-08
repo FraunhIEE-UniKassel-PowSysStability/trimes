@@ -44,6 +44,31 @@ class TestRmsRolling:
         )
 
 
+class TestRmsRollingVariableWindow:
+    def test_constant_window_matches_true_rms(self, sine):
+        s, per = sine
+        time_windows = np.full(s.size, float(per))  # window = one period everywhere
+        got = rms.rms_rolling_variable_window(s, time_windows, per)
+        assert isinstance(got, pd.Series)
+        assert got.shape == s.shape
+        np.testing.assert_allclose(
+            got.to_numpy()[2 * per :], 1 / np.sqrt(2), atol=5e-3
+        )
+        # leading, window-less region is zero-padded
+        assert np.count_nonzero(got.to_numpy()[:per]) == 0
+
+    def test_dataframe_columns(self, sine):
+        s, per = sine
+        df = pd.concat([s, 2 * s], axis=1)
+        df.columns = ["a", "b"]
+        time_windows = np.full(s.size, float(per))
+        got = rms.rms_rolling_variable_window(df, time_windows, per)
+        assert list(got.columns) == ["a", "b"]
+        np.testing.assert_allclose(
+            got["b"].to_numpy()[2 * per :], 2 / np.sqrt(2), atol=1e-2
+        )
+
+
 class TestRmsMinMax:
     def test_balanced_three_phase_settles_to_amplitude(self):
         n, per = 2000, 200

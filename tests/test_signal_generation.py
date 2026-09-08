@@ -73,6 +73,17 @@ class TestConcatenation:
         diffs = np.abs(np.diff(res.to_numpy()))
         assert diffs[999] <= diffs.max()
 
+    def test_angle_continuation_reproduces_unsplit_signal(self):
+        # Two contiguous constant-frequency segments concatenated with angle
+        # continuation must match one PeriodicSignal over the whole range.
+        step = 1e-4
+        t_full = np.arange(0.0, 0.2, step)
+        full = PeriodicSignal(t_full, f=50.0).get_signal()
+        res = sg.superimpose_and_concat_periodic_signals(
+            self._signals(step), angle_continuation=True
+        )
+        np.testing.assert_allclose(res.to_numpy(), full, atol=1e-9)
+
     def test_ragged_input_raises(self):
         bad = [
             [PeriodicSignal(np.arange(0.0, 0.1, 1e-3), f=50.0)],

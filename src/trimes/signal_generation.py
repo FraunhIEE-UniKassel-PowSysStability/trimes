@@ -300,10 +300,12 @@ def superimpose_and_concat_periodic_signals(
                 angle = signal.get_angle_over_time()
                 signals_superposed[m] = signal.get_signal_series_from_angle(angle)
                 if angle_continuation:
-                    # initial angle for this row in the next segment: extrapolate
-                    # one step past the last sample, then undo the phase shift.
-                    # TODO: verify the `+ (angle[-1] - angle[-2])` extrapolation
-                    # term (see trimes-gradual-refactor step 5).
+                    # Initial angle for this row in the *next* segment. The next
+                    # segment starts one sample step after this segment's last
+                    # sample, so extrapolate the angle by one step
+                    # (angle[-1] - angle[-2]); then undo the per-phase shift so
+                    # it can be re-applied for each phase. Exact when segments
+                    # are contiguous with a uniform step (the usual case).
                     phi_initial_next_row[m] = (
                         angle[-1] + (angle[-1] - angle[-2]) - phase_angle
                     )

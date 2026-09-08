@@ -89,7 +89,8 @@ def rms_rolling_variable_window(
     normalize_magnitude : bool, default False
         If True, multiply the result by ``sqrt(2)``.
     pad_width : int or tuple of int, optional
-        Padding for the leading samples. Defaults to ``(samples_per_window, 0)``.
+        Padding for the leading samples that have no full window. Defaults to
+        ``(index_of_first_full_window, 0)``.
     pad_mode : str, default "constant"
         Padding mode, passed to :func:`numpy.pad`.
 
@@ -100,29 +101,26 @@ def rms_rolling_variable_window(
     """
     normalization_factor = np.sqrt(2) if normalize_magnitude else 1
     time = ts.index.values
-    index_first_window = (
-        np.argmax(time - time[0] < time_windows) + 1
-    )  # first window where time_window fits in ts
-    rms = np.empty_like(ts.to_numpy()).reshape(ts.shape[0], -1)[index_first_window:, :]
-    for idx in range(ts.shape[0] - index_first_window):
-        t_samples_window = np.linspace(
-            time[idx] - time_windows[idx], time[idx], samples_per_window
-        )
-        samples = resample(ts, t_samples_window)
-        rms[idx, :] = (
-            np.sqrt(np.sum(np.power(samples, 2), axis=0) / samples_per_window)
-            * normalization_factor
-        )
+    index_first_window = int(
+        np.argmax(time - time[0] > time_windows) + 1
+    )  # first sample with a full window behind it
+    ts_ndim = ts.ndim
+    frame = ts.to_frame() if ts_ndim == 1 else ts
+    rms = frame.copy()
     if pad_width is None:
-        pad_width = (samples_per_window, 0)
-    rms = np.apply_along_axis(
-        np.pad,
-        0,
-        rms,
-        pad_width=pad_width,
-        mode=pad_mode,
-    )
-    return create_pandas_series_or_frame_with_same_columns_and_index(rms.squeeze(), ts)
+        pad_width = (index_first_window, 0)
+    for col in range(frame.shape[1]):
+        rms_col = np.empty(frame.shape[0] - index_first_window, dtype=float)
+        for idx in range(index_first_window, frame.shape[0]):
+            t_samples_window = np.linspace(
+                time[idx] - time_windows[idx], time[idx], samples_per_window
+            )
+            samples = resample(frame.iloc[:, col], t_samples_window).to_numpy()
+            rms_col[idx - index_first_window] = (
+                np.sqrt(np.mean(np.square(samples))) * normalization_factor
+            )
+        rms.iloc[:, col] = np.pad(rms_col, pad_width=pad_width, mode=pad_mode)
+    return rms.squeeze() if ts_ndim == 1 else rms
 
 
 def rms_min_max(
