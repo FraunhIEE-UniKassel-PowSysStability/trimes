@@ -1,37 +1,65 @@
-from collections.abc import Callable
-import operator
-from functools import partial
+"""Compare a time series against a reference or an envelope.
 
-import pandas as pd
+Element-wise arithmetic and comparison operators with optional resampling to a
+common grid, plus time-weighted error metrics (via :mod:`trimes.metrics`) that
+can be restricted to the spans where a condition holds.
+"""
+
+import operator
+from collections.abc import Callable
+
 import numpy as np
+import pandas as pd
 from numpy.typing import ArrayLike
 
-from trimes.base import resample, get_between, get_duration
+from trimes.base import FrameOrSeries, get_between, resample
 from trimes.metrics import get_metric_time_series, integral_abs_error
+
+__all__ = [
+    "subtract",
+    "add",
+    "apply_operator_series",
+    "apply_operator_df",
+    "greater_than_series",
+    "less_than_series",
+    "outside_envelope",
+    "get_time_bool",
+    "comparison_series",
+    "comparison_df",
+    "envelope_comparison_series",
+    "envelope_comparison_df",
+]
 
 
 def subtract(
-    ts: pd.Series,
+    ts: FrameOrSeries,
     reference: pd.Series | pd.DataFrame,
     extend: bool = False,
     resample_ts: bool = False,
     resample_reference: bool = False,
 ) -> pd.Series | pd.DataFrame:
-    """Difference between 'ts' and 'reference' (subtract 'reference' from 'ts').
+    """Subtract ``reference`` from ``ts``.
 
-    Args:
-        ts (pd.Series | pd.DataFrame): time series
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    reference : pandas.Series or pandas.DataFrame
+        Reference to subtract.
+    extend : bool, default False
+        If False (the default), the result is clipped to the time span of
+        ``ts``. If True, it keeps pandas' native behaviour of extending to the
+        union of both spans.
+    resample_ts : bool, default False
+        Resample ``ts`` onto ``reference``'s index before subtracting.
+    resample_reference : bool, default False
+        Resample ``reference`` onto ``ts``'s index before subtracting. Without
+        either resample flag, the two must already share a sample grid.
 
-        reference (pd.Series): reference time series
-
-        extend (bool, optional): extend the result beyond the boundaries of 'ts' if the boundaries of 'reference' are beyond 'ts' (which is the default behavior of the 'sub' method of pandas but might not be desired). Defaults to False (i.e. the boundaries of 'reference' - and therefore also of the returned time series - are limited to the boundaries of 'ts').
-
-        resample_ts (bool): If True, 'ts' is resampled with the index of 'reference'. If False, the sampling time of 'ts' and 'reference' must be equal. Defaults to False.
-
-        resample_reference (bool, optional): If True, 'reference' wil be resampled according to 'ts'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
-
-    Returns:
-        pd.Series | pd.DataFrame: difference
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        The difference.
     """
     if not extend:
         reference = _avoid_extension(ts, reference)
@@ -42,12 +70,13 @@ def subtract(
 
 
 def add(
-    ts: pd.Series,
+    ts: FrameOrSeries,
     reference: pd.Series | pd.DataFrame,
     extend: bool = False,
     resample_ts: bool = False,
     resample_reference: bool = False,
 ) -> pd.Series | pd.DataFrame:
+    """Add ``reference`` to ``ts``. See :func:`subtract` for the arguments."""
     if not extend:
         reference = _avoid_extension(ts, reference)
     ts, reference = _align_sample_time_of_ts_and_reference(
@@ -57,12 +86,10 @@ def add(
 
 
 def _avoid_extension(ts, reference):
+    """Clip ``reference`` to the time span of ``ts`` if it reaches beyond it."""
     t_start = ts.index.values[0]
     t_end = ts.index.values[-1]
-    cutting_ts_is_required = False
     if reference.index.values[0] < t_start or reference.index.values[-1] > t_end:
-        cutting_ts_is_required = True
-    if cutting_ts_is_required:
         reference = get_between(reference, t_start, t_end)
     return reference
 
@@ -70,6 +97,7 @@ def _avoid_extension(ts, reference):
 def _align_sample_time_of_ts_and_reference(
     ts, reference, resample_ts: bool, resample_reference: bool
 ):
+    """Optionally resample one of ``ts`` / ``reference`` onto the other's index."""
     if resample_ts:
         ts = resample(ts, reference.index.values)
     elif resample_reference:
@@ -83,22 +111,25 @@ def apply_operator_series(
     operator: Callable,
     resample_ts: bool = False,
     resample_reference: bool = False,
-) -> np.array:
-    """Apply operator (e.g. greater than/less than) to series.
+) -> np.ndarray:
+    """Apply a binary operator element-wise to ``ts`` and ``reference``.
 
-    Args:
-        ts (pd.Series): time series
+    Parameters
+    ----------
+    ts : pandas.Series
+        Time series.
+    reference : pandas.Series
+        Reference to compare against.
+    operator : callable
+        A binary operator, e.g. from the built-in :mod:`operator` module
+        (``operator.gt``, ``operator.lt``, ...).
+    resample_ts, resample_reference : bool, default False
+        Align the sample grids first (see :func:`subtract`).
 
-        reference (pd.Series): reference to compare to
-
-        operator (Callable): operator (e.g. from built-in operator module)
-
-        resample_ts (bool, optional): resample_ts (bool, optional): If True, 'ts' wil be resampled according to 'reference'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
-
-        resample_reference (bool, optional): If True, 'reference' wil be resampled according to 'ts'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
-
-    Returns:
-        np.array: boolean
+    Returns
+    -------
+    numpy.ndarray
+        The element-wise result (a boolean array for comparison operators).
     """
     ts, reference = _align_sample_time_of_ts_and_reference(
         ts, reference, resample_ts, resample_reference
@@ -112,8 +143,12 @@ def apply_operator_df(
     operator: Callable,
     resample_ts: bool = False,
     resample_reference: bool = False,
-) -> np.array:
-    """Apply operator (e.g. gretaer than/less than) to DataFrame. See 'apply_operator_series'."""
+) -> np.ndarray:
+    """:func:`apply_operator_series` for a DataFrame ``ts``.
+
+    Returns a 2-D array whose columns correspond to those of ``ts``, each
+    compared against the same ``reference``.
+    """
     ts, reference = _align_sample_time_of_ts_and_reference(
         ts, reference, resample_ts, resample_reference
     )
@@ -124,13 +159,15 @@ def apply_operator_df(
 
 def greater_than_series(
     ts: pd.Series, reference: pd.Series, resample_ts: bool = False
-) -> np.array:
+) -> np.ndarray:
+    """Boolean array: where ``ts > reference``."""
     return apply_operator_series(ts, reference, operator.gt, resample_ts)
 
 
 def less_than_series(
     ts: pd.Series, reference: pd.Series, resample_ts: bool = False
-) -> np.array:
+) -> np.ndarray:
+    """Boolean array: where ``ts < reference``."""
     return apply_operator_series(ts, reference, operator.lt, resample_ts)
 
 
@@ -139,20 +176,22 @@ def outside_envelope(
     envelope: pd.DataFrame,
     resample_ts: bool = False,
     resample_envelope: bool = False,
-) -> np.array:
-    """Get samples that are outside envelope.
+) -> np.ndarray:
+    """Boolean array: where ``ts`` leaves the envelope.
 
-    Args:
-        ts (pd.Series): time series
+    Parameters
+    ----------
+    ts : pandas.Series
+        Time series.
+    envelope : pandas.DataFrame
+        Column 0 is the upper boundary, column 1 the lower boundary.
+    resample_ts, resample_envelope : bool, default False
+        Align the sample grids first (see :func:`subtract`).
 
-        envelope (pd.DataFrame): first column is upper boundary, second column is lower boundary.
-
-        resample_ts (bool, optional): If True, 'ts' wil be resampled according to 'reference'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
-
-        resample_envelope (bool, optional): If True, 'envelope' wil be resampled according to 'ts'. Defaults to False (sampling time of 'ts' and 'envelope' must be equal).
-
-    Returns:
-        np.array: boolean array
+    Returns
+    -------
+    numpy.ndarray
+        True where ``ts`` is above the upper or below the lower boundary.
     """
     ts, envelope = _align_sample_time_of_ts_and_reference(
         ts, envelope, resample_ts, resample_envelope
@@ -166,14 +205,19 @@ def get_time_bool(
     b: ArrayLike,
     sample_time: float | ArrayLike,
 ) -> float:
-    """Get time duration where 'b' is True.
+    """Total time for which ``b`` is True.
 
-    Args:
-        b (ArrayLike): boolean
-        sample_time (ArrayLike): sampling time
+    Parameters
+    ----------
+    b : array_like
+        Boolean array.
+    sample_time : float or array_like
+        A constant sample step, or the per-sample time vector.
 
-    Returns:
-        float: time duration
+    Returns
+    -------
+    float
+        The accumulated duration.
     """
     if np.isscalar(sample_time):
         return b.sum() * sample_time
@@ -189,32 +233,37 @@ def comparison_series(
     sample_time: float | ArrayLike | None = None,
     resample_ts: bool = False,
     resample_reference: bool = False,
-) -> np.float64:
-    """Compare time series to a reference (and calculate error metric).
+) -> float:
+    """Time-weighted error of ``ts`` vs ``reference``, optionally masked.
 
-    Args:
-        ts (pd.Series | pd.DataFrame): time series.
+    Parameters
+    ----------
+    ts : pandas.Series
+        Time series under test.
+    reference : pandas.Series
+        Reference series.
+    operator_or_bool : callable or array_like, optional
+        Either a binary operator applied to ``ts`` and ``reference`` to build a
+        mask, or a ready-made boolean mask. Only the masked spans contribute to
+        the error; elsewhere ``ts`` is treated as equal to ``reference``. If
+        omitted, the whole series contributes.
+    metric : callable, default :func:`~trimes.metrics.integral_abs_error`
+        An sklearn-style metric.
+    sample_time : float or array_like, optional
+        Sample step(s); defaults to ``diff(reference.index)``.
+    resample_ts, resample_reference : bool, default False
+        Align the sample grids first (see :func:`subtract`).
 
-        reference (pd.Series): reference to compare to.
-
-        operator_or_bool (Callable, optional): Operator (applied to 'ts' and 'reference') or boolean array to select time spans.
-
-        metric (Callable, optional): A callable as defined in sklearn.metrics, see for example sklearn.metrics.root_mean_squared_error (must have same arguments).
-
-        sample_time (float | ArrayLike | None, optional): Sample time of ts. Defaults to None (will be calculated from 'ts.index').
-
-        resample_ts (bool, optional): If True, 'ts' wil be resampled according to 'reference'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
-
-        resample_reference (bool, optional): If True, 'reference' wil be resampled according to 'ts'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
-
-    Returns:
-        np.float64: results of metric
+    Returns
+    -------
+    float
+        The metric value (``0.0`` if the mask selects nothing).
     """
     ts, reference = _align_sample_time_of_ts_and_reference(
         ts, reference, resample_ts, resample_reference
     )
     if operator_or_bool is not None:
-        if isinstance(operator_or_bool, Callable):
+        if callable(operator_or_bool):
             mask = apply_operator_series(
                 ts, reference, operator_or_bool, resample_ts=False
             )
@@ -235,18 +284,18 @@ def comparison_series(
 def comparison_df(
     ts: pd.DataFrame,
     reference: pd.Series,
-    operator_or_bool: Callable = None,
+    operator_or_bool: Callable | ArrayLike | None = None,
     metric: Callable = integral_abs_error,
     resample_ts: bool = False,
     resample_reference: bool = False,
     sample_time: float | ArrayLike | None = None,
 ) -> ArrayLike:
-    """Compare time series to a reference (and calculate error metric). See 'comparison_series'."""
+    """:func:`comparison_series` for a DataFrame ``ts`` (one error per column)."""
     ts, reference = _align_sample_time_of_ts_and_reference(
         ts, reference, resample_ts, resample_reference
     )
     if operator_or_bool is not None:
-        if isinstance(operator_or_bool, Callable):
+        if callable(operator_or_bool):
             masks = apply_operator_df(
                 ts, reference, operator_or_bool, resample_ts=False
             )
@@ -271,21 +320,26 @@ def envelope_comparison_series(
     metric: Callable = integral_abs_error,
     resample_ts: bool = False,
 ) -> float:
-    """'comparison_series' for a reference that is an envelope.
+    """:func:`comparison_series` against an envelope.
 
-    Args:
-        ts (pd.Series): time series
+    The error is the sum of the metric on the spans where ``ts`` exceeds the
+    upper boundary and the spans where it drops below the lower boundary.
 
-        envelope (pd.DataFrame): first column is upper boundary, second column is lower boundary.
+    Parameters
+    ----------
+    ts : pandas.Series
+        Time series under test.
+    envelope : pandas.DataFrame
+        Column 0 is the upper boundary, column 1 the lower boundary.
+    metric : callable, default :func:`~trimes.metrics.integral_abs_error`
+        An sklearn-style metric.
+    resample_ts : bool, default False
+        Resample ``ts`` onto the envelope's index first.
 
-        metric (Callable, optional): see 'comparison_series'. Defaults to integral_abs_error.
-
-        resample_ts (bool, optional): If True, 'ts' wil be resampled according to 'reference'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
-
-        resample_reference (bool, optional): If True, 'reference' wil be resampled according to 'ts'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
-
-    Returns:
-        float: metric result
+    Returns
+    -------
+    float
+        The combined boundary-violation error.
     """
     error_upper = comparison_series(
         ts, envelope.iloc[:, 0], operator.gt, metric=metric, resample_ts=resample_ts
@@ -302,7 +356,7 @@ def envelope_comparison_df(
     metric: Callable = integral_abs_error,
     resample_ts: bool = False,
 ) -> ArrayLike:
-    """See envelope_comparison_series (only difference: 'ts' is a DataFrame)."""
+    """:func:`envelope_comparison_series` for a DataFrame ``ts`` (one error per column)."""
     error_upper = comparison_df(
         ts, envelope.iloc[:, 0], operator.gt, metric=metric, resample_ts=resample_ts
     )

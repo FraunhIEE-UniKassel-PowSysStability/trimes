@@ -1,39 +1,74 @@
+"""Error metrics and similarity measures for time series.
+
+The ``get_metric_*`` helpers adapt time-domain data to the call convention of
+:mod:`sklearn.metrics` (``metric(y_true, y_pred, sample_weight=..., multioutput=...)``),
+weighting each sample by its time step so that the result is an integral over
+time rather than a plain sample average. :func:`integral_abs_error` and
+:func:`integral_squared_error` follow the same convention and can be passed
+wherever an sklearn metric is expected.
+"""
+
 from collections.abc import Callable
 
 import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
 
-from trimes.base import resample
+from trimes.base import FrameOrSeries, resample
+
+__all__ = [
+    "get_metric_time_series",
+    "get_metric_np",
+    "integral_abs_error",
+    "integral_squared_error",
+    "get_cosine_similarity",
+    "get_cosine_similarity_matrix",
+    "get_cosine_similarity_matrix_as_df",
+]
 
 # numpy renamed np.trapz -> np.trapezoid in 2.0; support both (numpy >= 1.24).
 _trapezoid = getattr(np, "trapezoid", getattr(np, "trapz", None))
 
 
 def get_metric_time_series(
-    ts: pd.Series | pd.DataFrame,
+    ts: FrameOrSeries,
     reference: pd.Series,
     metric: Callable,
     sample_time: float | ArrayLike | None = None,
     resample_ts: bool = False,
 ) -> float | ArrayLike:
-    """Get metric (e.g. root mean squared error) of a time series.
+    """Evaluate a time-weighted error metric of ``ts`` against ``reference``.
 
-    Serves also as an interface to the metrics of the scikit-learn package (see sklearn.metrics module).
+    Also serves as an interface to :mod:`sklearn.metrics` (e.g.
+    :func:`sklearn.metrics.root_mean_squared_error`).
 
-    Args:
-        ts (pd.Series | pd.DataFrame): time series.
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series under test. Each column of a DataFrame is scored against
+        the same ``reference``.
+    reference : pandas.Series
+        Reference series. Its index provides the time steps used as sample
+        weights.
+    metric : callable
+        An sklearn-style metric ``metric(y_true, y_pred, sample_weight=...,
+        multioutput=...)``.
+    sample_time : float or array_like, optional
+        Sample step(s) of ``ts``. Defaults to ``diff(reference.index)``. A
+        scalar is broadcast.
+    resample_ts : bool, default False
+        If True, resample ``ts`` onto ``reference``'s index first; otherwise
+        the two must already share a sample grid.
 
-        reference (pd.Series): reference to compare to.
+    Returns
+    -------
+    float or numpy.ndarray
+        The metric value, or one value per column of ``ts``.
 
-        metric (Callable): A callable as defined in sklearn.metrics, see for example sklearn.metrics.root_mean_squared_error (must have same arguments).
-
-        sample_time (float | ArrayLike | None, optional): Sample time of ts. Defaults to None (will be calculated from 'ts.index').
-
-        resample_ts (bool, optional): If True, 'ts' wil be resampled according to 'reference'. Defaults to False (sampling time of 'ts' and 'reference' must be equal).
-
-    Returns:
-        float | ArrayLike: results for metric (for each column if 'ts' is a DataFrame)
+    Notes
+    -----
+    The last sample of both series is dropped, because there are ``n - 1``
+    time steps to weight ``n`` samples (a trapezoidal-style convention).
     """
     if resample_ts:
         ts = resample(ts, reference.index.values)
@@ -58,21 +93,26 @@ def get_metric_np(
     sample_weight: ArrayLike | None = None,
     **kwargs,
 ) -> float | ArrayLike:
-    """Get metric from time series data in numpy format.
+    """Evaluate an sklearn-style metric on numpy arrays.
 
-    Serves also as an interface to the metrics of the scikit-learn package (see sklearn.metrics module).
+    Parameters
+    ----------
+    ts : array_like
+        Values under test, shape ``(n,)`` or ``(n, n_columns)``.
+    reference : array_like
+        Reference values, shape ``(n,)``. Broadcast across the columns of
+        ``ts`` when ``ts`` is 2-D.
+    metric : callable
+        An sklearn-style metric (see :func:`get_metric_time_series`).
+    sample_weight : array_like, optional
+        Per-sample weights (the sample step, for a time integral).
+    **kwargs
+        Forwarded to ``metric``.
 
-    Args:
-        ts (ArrayLike): time series
-
-        reference (ArrayLike): reference to compare to.
-
-        metric (Callable): A callable as defined in sklearn.metrics, see for example sklearn.metrics.root_mean_squared_error (must have same arguments).
-
-        sample_weight (ArrayLike | None, optional): Sample weights (sampling time for time series). Defaults to None.
-
-    Returns:
-        float | ArrayLike: metric result
+    Returns
+    -------
+    float or numpy.ndarray
+        Scalar for 1-D input, one value per column for 2-D input.
     """
     if ts.ndim > 1:
         multioutput = "raw_values"
@@ -89,23 +129,26 @@ def integral_abs_error(
     y_true: ArrayLike,
     y_pred: ArrayLike,
     sample_weight: ArrayLike | None = None,
-    multioutput="uniform_average",
+    multioutput: str | ArrayLike = "uniform_average",
 ) -> float | ArrayLike:
-    """Integral absolute error (area).
+    """Integral of ``|y_pred - y_true|`` over time (the area between the curves).
 
-    Metric similar to metrics defined in the scikit-learn package (see for example sklearn.metrics.root_mean_squared_error).
+    An sklearn-style metric: same signature as
+    :func:`sklearn.metrics.root_mean_squared_error`, so it can be passed to
+    :func:`get_metric_time_series`.
 
-    Args:
-        y_true (ArrayLike): true values
+    Parameters
+    ----------
+    y_true, y_pred : array_like
+        True and predicted values.
+    sample_weight : array_like, optional
+        Per-sample weights (the sample step).
+    multioutput : {'uniform_average', 'raw_values'} or array_like, default 'uniform_average'
+        Column aggregation, following the sklearn convention.
 
-        y_pred (ArrayLike): predicted values
-
-        sample_weight (_type_, optional): Sample weights. Defaults to None.
-
-        multioutput (str, optional): See scikit-learn package. Defaults to "uniform_average".
-
-    Returns:
-        float | ArrayLike: result
+    Returns
+    -------
+    float or numpy.ndarray
     """
     weighted_error = _weighted_error(y_true, y_pred, sample_weight)
     integrated_error = _trapezoid(np.abs(weighted_error), axis=0)
@@ -113,23 +156,14 @@ def integral_abs_error(
 
 
 def integral_squared_error(
-    y_true, y_pred, sample_weight=None, multioutput="uniform_average"
+    y_true: ArrayLike,
+    y_pred: ArrayLike,
+    sample_weight: ArrayLike | None = None,
+    multioutput: str | ArrayLike = "uniform_average",
 ) -> float | ArrayLike:
-    """Integral squared error.
+    """Integral of ``(y_pred - y_true) ** 2`` over time.
 
-    Metric similar to metrics defined in the scikit-learn package (see for example sklearn.metrics.root_mean_squared_error).
-
-    Args:
-        y_true (ArrayLike): true values
-
-        y_pred (ArrayLike): predicted values
-
-        sample_weight (_type_, optional): Sample weights. Defaults to None.
-
-        multioutput (str, optional): See scikit-learn package. Defaults to "uniform_average".
-
-    Returns:
-        float | ArrayLike: result
+    Companion of :func:`integral_abs_error`; see it for the argument meanings.
     """
     weighted_error = _weighted_error(y_true, y_pred, sample_weight)
     integrated_error = _trapezoid(np.square(weighted_error), axis=0)
@@ -139,15 +173,10 @@ def integral_squared_error(
 def _weighted_error(
     y_true: ArrayLike, y_pred: ArrayLike, sample_weight: ArrayLike
 ) -> ArrayLike:
-    """Weighte error (difference) between 'y_pred' and 'y_true'.
+    """Weighted error ``(y_pred - y_true) * sample_weight``.
 
-    Args:
-        y_true (ArrayLike): dimension (n,)
-        y_pred (ArrayLike): dimension (n,) or (n,m)
-        sample_weight (ArrayLike): dimension (n,)
-
-    Returns:
-        ArrayLike: dimension (n,) or (n,m)
+    ``y_true`` and ``sample_weight`` have shape ``(n,)``; ``y_pred`` may be
+    ``(n,)`` or ``(n, m)``. The result matches ``y_pred``.
     """
     return ((y_pred - y_true).T * sample_weight).T
 
@@ -155,7 +184,7 @@ def _weighted_error(
 def _handle_sklearn_multioutput(
     multioutput: str | None | ArrayLike, metric_result: ArrayLike
 ):
-    """See scikit-learn package and its metrics module (e.g. sklearn.metrics.root_mean_squared_error)."""
+    """Apply the sklearn ``multioutput`` aggregation to a per-column result."""
     if isinstance(multioutput, str):
         if multioutput == "raw_values":
             return metric_result
@@ -165,34 +194,44 @@ def _handle_sklearn_multioutput(
     return np.average(metric_result, weights=multioutput)
 
 
-def get_cosine_similarity(a: np.array, b: np.array) -> float:
-    """Get cosine similarity of vectors a and b.
+def get_cosine_similarity(a: ArrayLike, b: ArrayLike) -> float:
+    """Cosine similarity of two vectors.
 
-    Cosine similarity is a measure of similarity that does not depend on the magnitudes of the vectors, but only on their angle.
-    Vectors a and b must be of same length (for example results of two variables of a time domain simulation).
+    Depends only on the angle between ``a`` and ``b``, not their magnitudes.
+    They must have the same length (e.g. two variables of a time-domain
+    simulation).
 
-    Args:
-        a (np.array): vector
-        b (np.array): vector
+    Parameters
+    ----------
+    a, b : array_like
+        Vectors of equal length.
 
-    Returns:
-        float: cosine similarity
+    Returns
+    -------
+    float
+        Value in ``[-1, 1]``.
     """
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 
-def get_cosine_similarity_matrix(a: np.array) -> np.array:
-    """Get cosine similarity matrix of columns in a.
+def get_cosine_similarity_matrix(a: np.ndarray) -> np.ndarray:
+    """Symmetric matrix of pairwise cosine similarities between the columns of ``a``.
 
-    Returns a symmetric matrix with cosine similarity values between the columns in a (e.g. indices [x,y] are the similarity between columns x and y).
+    Parameters
+    ----------
+    a : numpy.ndarray
+        Each column is one signal (e.g. one variable over time).
 
-    Args:
-        a (np.array): matrix to calculate similarity of columns (e.g. each column is a result of a variable in time domain)
+    Returns
+    -------
+    numpy.ndarray
+        Square matrix; entry ``[i, j]`` is the similarity of columns ``i`` and
+        ``j``, with ``1`` on the diagonal.
 
-    Returns:
-        np.array: similarity matrix
-
-    TODO: use scikitlearn instead
+    Notes
+    -----
+    TODO: replace the explicit loop with
+    :func:`sklearn.metrics.pairwise.cosine_similarity`.
     """
     cosine_similarity = np.zeros((a.shape[1], a.shape[1]), dtype=float)
     for col_num_1 in range(a.shape[1]):
@@ -208,15 +247,17 @@ def get_cosine_similarity_matrix(a: np.array) -> np.array:
 
 
 def get_cosine_similarity_matrix_as_df(a: pd.DataFrame) -> pd.DataFrame:
-    """Get cosine similarity of columns in a pandas DataFrame.
+    """:func:`get_cosine_similarity_matrix` with ``a``'s column names as labels.
 
-    See also get_cosine_similarity_matrix. This method adds columns (headers) and indices to the similarity matrix using the columns of a.
+    Parameters
+    ----------
+    a : pandas.DataFrame
+        Each column is one signal.
 
-    Args:
-        a (pd.DataFrame): DataFrame with matrix to calculate similarity of columns (e.g. each column is a result of a variable in time domain)
-
-    Returns:
-        pd.DataFrame: DataFrame with similarity matrix and columns/indices from a
+    Returns
+    -------
+    pandas.DataFrame
+        The similarity matrix, indexed and columned by ``a.columns``.
     """
     cosine_similarity = get_cosine_similarity_matrix(a.to_numpy())
     return pd.DataFrame(cosine_similarity, columns=a.columns, index=a.columns)
