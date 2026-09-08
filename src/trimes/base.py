@@ -1,12 +1,15 @@
-from typing import Union, Callable, Literal
-from collections.abc import Iterable
-from functools import partial
+"""Access, interpolation and resampling helpers for numerically indexed
+time series -- ``pandas`` objects whose index is time as plain numbers
+(seconds), not a ``DatetimeIndex``.
+"""
 
-import pandas as pd
-import numpy as np
-from numpy.typing import ArrayLike
+from collections.abc import Callable, Iterable
+from functools import partial
 from typing import Literal
 
+import numpy as np
+import pandas as pd
+from numpy.typing import ArrayLike
 
 FrameOrSeries = pd.Series | pd.DataFrame
 
@@ -40,62 +43,87 @@ __all__ = [
 ]
 
 
+def get_sample(ts: FrameOrSeries, time: float | ArrayLike) -> FrameOrSeries:
+    """First sample at or after ``time``.
 
-def get_sample(
-    ts: Union[pd.DataFrame, pd.Series], time: Union[np.float64, np.array]
-) -> Union[pd.DataFrame, pd.Series]:
-    """Get first sample after 'time'.
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series with a numeric, increasing index.
+    time : float or array_like
+        Instant(s) in time.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        time (np.float64 | np.array): Point(s) in time
-
-    Returns:
-        Union[pd.DataFrame, pd.Series]: Sample(s)
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        Row(s) at the first index position ``>= time`` (binary search).
     """
-    return ts.iloc[np.searchsorted(ts.index.values, time)]  # uses binary search
+    return ts.iloc[np.searchsorted(ts.index.values, time)]  # binary search
 
 
 def get_sample_shifted(
-    ts: Union[pd.DataFrame, pd.Series], time: np.float64 | list[np.float64], shift: int
-) -> Union[pd.DataFrame, pd.Series]:
-    """Get sample after 'time' but shifted by 'shift' samples.
+    ts: FrameOrSeries, time: float | ArrayLike, shift: int
+) -> FrameOrSeries:
+    """Sample at or after ``time``, then moved by ``shift`` samples.
 
-    Example: If shift = -1, the first sample after 'time' is searched and then the sample before that is resturned (i.e. the first sample before 'time').
+    Example: ``shift = -1`` locates the first sample at or after ``time`` and
+    returns the one before it, i.e. the last sample strictly before ``time``.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        time (np.float64 | list[np.float64]): point(s) in time
-        shift (int): Samples are shifted by 'shift'
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    time : float or array_like
+        Instant(s) in time.
+    shift : int
+        Offset in samples applied to the located position.
 
-    Returns:
-        Union[pd.DataFrame, pd.Series]: Sample(s)
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        The shifted sample(s).
     """
     return ts.iloc[np.searchsorted(ts.index.values, time) + shift]
 
 
 def get_samples_around(
-    ts: Union[pd.DataFrame, pd.Series],
-    time: np.float64,
+    ts: FrameOrSeries,
+    time: float,
     num_samples_before: int = -1,
     num_samples_after: int = 0,
-) -> Union[pd.DataFrame, pd.Series]:
-    """Get samples around point(s) in time (between 'num_samples_before' and 'num_samples_after', these values are relative to the first sample after 'time'). By default, the samples before and after 'time' are returned.
+) -> FrameOrSeries:
+    """Samples in a window around ``time``.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        time (np.float64): point(s) in time
-        num_samples_before (int, optional): shift before
-        num_samples_after (int, optional): shift after
+    ``num_samples_before`` and ``num_samples_after`` are offsets in samples
+    relative to the first sample at or after ``time``. The defaults return the
+    sample just before and the sample just after ``time``.
 
-    Returns:
-        Union[pd.DataFrame, pd.Series]: Sample values
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    time : float
+        Instant in time.
+    num_samples_before : int, default -1
+        Start of the window, as a sample offset (usually negative).
+    num_samples_after : int, default 0
+        End of the window (exclusive), as a sample offset.
+
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        The samples in the window.
     """
     index = np.searchsorted(ts.index.values, time)
     return ts.iloc[index + num_samples_before : index + num_samples_after]
 
 
-def get_sample_const(df: pd.DataFrame, time: list[np.float64]):
+def get_sample_const(df: pd.DataFrame, time: ArrayLike) -> FrameOrSeries:
+    """Sample(s) at ``time`` assuming a constant sampling interval.
+
+    Faster than :func:`get_sample` (arithmetic on the first two index values
+    instead of a search), but only correct for a uniformly sampled ``df``.
+    """
     return df.iloc[
         np.rint(
             (time - df.index.values[0]) / (df.index.values[1] - df.index.values[0])
@@ -103,15 +131,20 @@ def get_sample_const(df: pd.DataFrame, time: list[np.float64]):
     ]
 
 
-def interp_df(df: pd.DataFrame, time: np.array) -> pd.DataFrame:
-    """Interpolate (linear) DataFrame at 'time'.
+def interp_df(df: pd.DataFrame, time: ArrayLike) -> pd.DataFrame:
+    """Linearly interpolate every column of ``df`` at ``time``.
 
-    Args:
-        df (pd.DataFrame): time series
-        time (np.array): point(s) in time
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Time series.
+    time : array_like
+        Instant(s) in time.
 
-    Returns:
-        pd.DataFrame: interpolated value(s)
+    Returns
+    -------
+    pandas.DataFrame
+        Interpolated values, indexed by ``time``.
     """
     return pd.DataFrame(
         interp_np_matrix(time, df.index.to_numpy(), df.to_numpy()),
@@ -120,16 +153,22 @@ def interp_df(df: pd.DataFrame, time: np.array) -> pd.DataFrame:
     )
 
 
-def interp_np_matrix(new_x: np.array, old_x: np.array, y: np.array) -> np.matrix:
-    """Interpolate (linear) numpy matrix at points 'new_x'.
+def interp_np_matrix(new_x: ArrayLike, old_x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Linearly interpolate each column of a 2-D array at ``new_x``.
 
-    Args:
-      new_x (np.array): new x values
-      old_x (np.array): old x values
-      y (np.array): old values
+    Parameters
+    ----------
+    new_x : array_like
+        New x values.
+    old_x : numpy.ndarray
+        Existing x values (increasing).
+    y : numpy.ndarray
+        Existing values, shape ``(len(old_x), n_columns)``.
 
-    Returns:
-        np.matrix: Interpolated values
+    Returns
+    -------
+    numpy.ndarray
+        Interpolated values, shape ``(len(new_x), n_columns)``.
     """
     interpolated = np.empty((len(new_x), y.shape[1]), dtype=np.float64)
 
@@ -138,71 +177,94 @@ def interp_np_matrix(new_x: np.array, old_x: np.array, y: np.array) -> np.matrix
     return interpolated
 
 
-def interp_series(ts: pd.Series, time: np.array) -> pd.Series:
-    """Interpolate time series 'ts' (using linear interpolation) at 'time'.
+def interp_series(ts: pd.Series, time: ArrayLike) -> pd.Series:
+    """Linearly interpolate ``ts`` at ``time``.
 
-    Args:
-        ts (pd.Series): time series
-        time (np.array): point(s) in time
+    Parameters
+    ----------
+    ts : pandas.Series
+        Time series.
+    time : array_like
+        Instant(s) in time.
 
-    Returns:
-        pd.Series: Interpolated values
+    Returns
+    -------
+    pandas.Series
+        Interpolated values, indexed by ``time``.
     """
     return pd.Series(np.interp(time, ts.index.values, ts.values), index=time)
 
 
-def get_between(
-    ts: Union[pd.DataFrame, pd.Series], tstart: float, tend: float
-) -> Union[pd.DataFrame, pd.Series]:
-    """Get values between 'tstart' and 'tend'. Returns values for 'tstart' < t < 'tend'.
+def get_between(ts: FrameOrSeries, tstart: float, tend: float) -> FrameOrSeries:
+    """Samples with ``tstart <= t < tend``.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        tstart (int): start time
-        tend (int): end time
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    tstart, tend : float
+        Start (inclusive) and end (exclusive) times.
 
-    Returns:
-        Union[pd.DataFrame, pd.Series]: Values in range
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        Samples in the range.
     """
     indices = np.searchsorted(ts.index.to_numpy(), [tstart, tend])
     return ts.iloc[indices[0] : indices[1]]
 
 
 def get_between_and_around(
-    ts: Union[pd.DataFrame, pd.Series],
+    ts: FrameOrSeries,
     tstart: float,
     tend: float,
     num_samples_start: int = -1,
     num_samples_end: int = 1,
-) -> Union[pd.DataFrame, pd.Series]:
-    """Get values between 'tstart' and 'tend'. Similar to 'get_between', but includes samples before 'tstart' (or at 'tstart') and after 'tend' (or at 'tend').
+) -> FrameOrSeries:
+    """Like :func:`get_between`, but padded by a few samples on each side.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        tstart (int): start time
-        tend (int): end time
-        num_samples_start (int, optional): negative values include samples before 'tstart'. Defaults to -1.
-        num_samples_end (int, optional): positive values include samples after 'tend'. Defaults to 1.
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    tstart, tend : float
+        Start and end times.
+    num_samples_start : int, default -1
+        Sample offset applied to the start index; a negative value includes
+        samples before ``tstart``.
+    num_samples_end : int, default 1
+        Sample offset applied to the end index; a positive value includes
+        samples after ``tend``.
 
-    Returns:
-        Union[pd.DataFrame, pd.Series]: Values in range and around range
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        Samples in the range plus the padding.
     """
     indices = np.searchsorted(ts.index.to_numpy(), [tstart, tend])
     return ts.iloc[indices[0] + num_samples_start : indices[1] + num_samples_end]
 
 
 def get_between_interp(
-    ts: Union[pd.DataFrame, pd.Series], tstart: float, tend: float
-) -> Union[pd.DataFrame, pd.Series]:
-    """Get between 'tstart' and 'tend' and interpolate the values at 'tstart' and 'tend'.
+    ts: FrameOrSeries, tstart: float, tend: float
+) -> FrameOrSeries:
+    """Samples between ``tstart`` and ``tend``, with the endpoints interpolated.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        tstart (float): start time
-        tend (float): end time
+    Unlike :func:`get_between`, the first and last rows sit exactly at
+    ``tstart`` and ``tend`` (linearly interpolated) rather than on the
+    surrounding sample grid.
 
-    Returns:
-        Union[pd.DataFrame, pd.Series]: Values in range
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    tstart, tend : float
+        Start and end times.
+
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        Samples in the range, bounded exactly by ``tstart`` and ``tend``.
     """
     indices = np.searchsorted(ts.index.to_numpy(), [tstart, tend])
     ts_between = ts.iloc[indices[0] - 1 : indices[1] + 1].copy()
@@ -227,30 +289,41 @@ def get_between_interp(
     return ts_between
 
 
-def get_index(ts: Union[pd.DataFrame, pd.Series], time: np.array) -> int | ArrayLike:
-    """Get first index after 'time'.
+def get_index(ts: FrameOrSeries, time: float | ArrayLike) -> int | np.ndarray:
+    """Index position of the first sample at or after ``time``.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        time (np.array): Point(s) in time.
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    time : float or array_like
+        Instant(s) in time.
 
-    Returns:
-        Union[pd.DataFrame, pd.Series]: index
+    Returns
+    -------
+    int or numpy.ndarray
+        The integer position(s), as returned by :func:`numpy.searchsorted`.
     """
     return np.searchsorted(ts.index.values, time)
 
 
 def resample(
-    ts: Union[pd.DataFrame, pd.Series], new_time: Union[np.array, Iterable, float, int]
-) -> Union[pd.DataFrame, pd.Series]:
-    """Resample time series at 'new_time'.
+    ts: FrameOrSeries, new_time: np.ndarray | Iterable | float
+) -> FrameOrSeries:
+    """Resample ``ts`` onto ``new_time`` by linear interpolation.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        x (Union[np.array, Iterable, float, int]): New sample time.
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    new_time : numpy.ndarray or iterable or float
+        Either the new sample instants, or a scalar step -- in which case the
+        grid ``arange(t[0], t[-1], new_time)`` is used.
 
-    Returns:
-        Union[pd.DataFrame, pd.Series]: Resampled values
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        Resampled values.
     """
     if not isinstance(new_time, np.ndarray):
         new_time = np.arange(ts.index.values[0], ts.index.values[-1], new_time)
@@ -260,116 +333,117 @@ def resample(
         return interp_series(ts, new_time)
 
 
-def get_delta(ts: Union[pd.DataFrame, pd.Series], tstart: np.float64, tend: np.float64):
-    """Get difference between values at 'tend' and 'tstart'
+def get_delta(ts: FrameOrSeries, tstart: float, tend: float) -> FrameOrSeries:
+    """Change in value between ``tstart`` and ``tend`` (``value(tend) - value(tstart)``).
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        tstart (np.float64): start time
-        tend (np.float64): end time
-
-    Returns:
-        _type_: Difference
+    Uses the nearest sample at or after each instant (see :func:`get_sample`).
     """
     return get_sample(ts, tend) - get_sample(ts, tstart)
 
 
 def get_delta_shift(
-    ts: Union[pd.DataFrame, pd.Series],
-    time: np.float64,
+    ts: FrameOrSeries,
+    time: float,
     num_samples_before: int,
     num_samples_after: int,
-) -> Union[pd.DataFrame, pd.Series]:
-    """Get difference between samples around 'time'. The samples are shifted by 'num_samples_before'/'num_samples_after' indeces (e.g. '0' would be the first sample after 'time').
+) -> FrameOrSeries:
+    """Change in value across ``time``, measured between two shifted samples.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): time series
-        time (np.float64): point in time
-        num_samples_before (int): sample shift before (usually negative)
-        num_samples_after (int): sample shift after (usually positive)
+    Both offsets are relative to the first sample at or after ``time``
+    (offset ``0``). The result is
+    ``ts[idx + num_samples_after] - ts[idx + num_samples_before]``.
 
-    Returns:
-        Union[pd.DataFrame, pd.Series]: Difference
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series.
+    time : float
+        Instant in time.
+    num_samples_before : int
+        Sample offset of the "before" point (usually negative).
+    num_samples_after : int
+        Sample offset of the "after" point (usually positive).
+
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        The difference.
     """
-
     index = np.searchsorted(ts.index.values, time)
     return ts.iloc[index + num_samples_after] - ts.iloc[index + num_samples_before]
 
 
 def get_delta_around_event(
-    ts: Union[pd.DataFrame, pd.Series],
-    evemt_time: np.float64,
+    ts: FrameOrSeries,
+    event_time: float,
     num_samples_before: int = -2,
     num_samples_after: int = 1,
-):
-    """Returns the difference between time series values around an event. Uses 'get_delta_shifted' with default samples. The main reason to have this  function in addition to 'get_delta_shifted' is its descriptive name when used in the context of events in time domain simulations.
-    The default values (-2 and 1) are chosen because numerical solvers sometimes behave unexpectedly around events. Hence, not the direct samples before and after the event are used, but a distance of one step is maintained.
+) -> FrameOrSeries:
+    """Change in value across an event -- :func:`get_delta_shift` with event-friendly defaults.
+
+    Exists alongside :func:`get_delta_shift` for its self-documenting name at
+    call sites in time-domain simulation code. The defaults (``-2`` and ``1``)
+    keep a one-step margin from the event, because numerical solvers sometimes
+    place erratic samples immediately either side of it.
     """
-    return get_delta_shift(ts, evemt_time, num_samples_before, num_samples_after)
+    return get_delta_shift(ts, event_time, num_samples_before, num_samples_after)
 
 
-def get_delta_interp_df(
-    df: pd.DataFrame, tstart: np.float64, tend: np.float64
-) -> pd.DataFrame:
-    """Get difference between interpolated (linear) values at 'tend' and 'tstart'
-
-    Args:
-        df (pd.DataFrame): time series
-        tstart (np.float64): start time
-        tend (np.float64): end time
-
-    Returns:
-        pd.DataFrame: Difference
-    """
+def get_delta_interp_df(df: pd.DataFrame, tstart: float, tend: float) -> pd.Series:
+    """Change in each column between ``tstart`` and ``tend``, both linearly interpolated."""
     values = interp_df(df, (tstart, tend))
     return values.iloc[1, :] - values.iloc[0, :]
 
 
-def get_delta_interp_series(s: pd.Series, tstart: int, tend: int):
-    """Get difference between interpolated (linear) values at 'tend' and 'tstart'
-
-    Args:
-        df (pd.Series): time series
-        tstart (np.float64): start time
-        tend (np.float64): end time
-
-    Returns:
-        pd.DataFrame: Difference
-    """
+def get_delta_interp_series(s: pd.Series, tstart: float, tend: float) -> float:
+    """Change in value between ``tstart`` and ``tend``, both linearly interpolated."""
     values = interp_series(s, (tstart, tend))
     return values.iloc[1] - values.iloc[0]
 
 
-def get_duration(ts: pd.DataFrame | pd.Series):
+def get_duration(ts: FrameOrSeries) -> float:
+    """Time span of ``ts`` in seconds (``index[-1] - index[0]``)."""
     return ts.index.values[-1] - ts.index.values[0]
 
 
 def create_pandas_series_or_frame_with_same_columns_and_index(
-    data: np.array, original: Union[pd.DataFrame, pd.Series]
-) -> Union[pd.DataFrame, pd.Series]:
+    data: np.ndarray, original: FrameOrSeries
+) -> FrameOrSeries:
+    """Wrap ``data`` in a pandas object matching ``original``'s type and labels.
+
+    A :class:`~pandas.DataFrame` gets ``original``'s columns and index; a
+    :class:`~pandas.Series` gets ``original``'s name and index.
+    """
     if isinstance(original, pd.DataFrame):
         return pd.DataFrame(data, columns=original.columns, index=original.index)
     else:
         return pd.Series(data, name=original.name, index=original.index)
 
 
-def superpose_series(series: list[pd.Series]):
+def superpose_series(series: list[pd.Series]) -> pd.Series:
+    """Sum a list of Series, aligning on the index (missing points count as 0)."""
     return pd.concat(series, axis=1).sum(axis=1)
 
 
 def apply_to_columns(
-    ts: pd.DataFrame | pd.Series, func: Callable, **kwargs
-) -> pd.DataFrame | pd.Series:
-    """
-    Apply 'func' to all columns of 'ts'. Provide additional arguments to 'func' through keyword arguments ('**kwargs').
+    ts: FrameOrSeries, func: Callable, **kwargs
+) -> FrameOrSeries:
+    """Apply ``func`` to each column of ``ts``.
 
-    Args:
-        ts (pd.DataFrame | pd.Series): time series
-        func (Callable): function for which additional arguments can be provided.
-        kwargs: keyword arguments of this function can be keyword or positional arguments of 'func'.
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series. A Series is treated as a single column.
+    func : callable
+        Applied column-wise (``axis=0``).
+    **kwargs
+        Bound to ``func`` via :func:`functools.partial`; they may fill either
+        keyword or positional parameters of ``func``.
 
-    Returns:
-        pd.DataFrame | pd.Series: time series
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        Same type as ``ts``.
     """
     func_partial = partial(func, **kwargs)
     if isinstance(ts, pd.Series):
@@ -377,10 +451,6 @@ def apply_to_columns(
         return ts.squeeze()
     else:
         return ts.apply(func_partial, axis=0)
-
-
-
-
 
 
 # --------------------------------------------------------------------------- #
