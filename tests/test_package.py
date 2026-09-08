@@ -8,6 +8,7 @@ import pytest
 
 SUBMODULES = [
     "trimes._optional",
+    "trimes.accessor",
     "trimes.analytic",
     "trimes.base",
     "trimes.comparison",
@@ -70,3 +71,30 @@ def test_import_trimes_stays_light():
         [sys.executable, "-c", code], capture_output=True, text=True, check=True
     )
     assert out.stdout.strip() == "", f"import trimes pulled in: {out.stdout.strip()}"
+
+
+def test_lazy_submodule_attribute_access():
+    """Submodules resolve as attributes of the package without an explicit import."""
+    import trimes
+
+    assert trimes.fft.rfft.__name__ == "rfft"
+    assert trimes.transforms.abc_2_dq0.__name__ == "abc_2_dq0"
+    # cached on the package after first access
+    assert "fft" in vars(trimes)
+    assert "fft" in dir(trimes)
+
+    with pytest.raises(AttributeError):
+        trimes.does_not_exist
+
+
+def test_lazy_access_does_not_eagerly_import_scipy():
+    """Touching a numpy-only submodule via attribute access stays scipy-free."""
+    code = (
+        "import sys, trimes; "
+        "trimes.transforms; "
+        "print('scipy' in sys.modules)"
+    )
+    out = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    )
+    assert out.stdout.strip() == "False"
