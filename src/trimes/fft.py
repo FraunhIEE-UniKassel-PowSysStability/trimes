@@ -42,7 +42,7 @@ except ModuleNotFoundError as _exc:  # pragma: no cover - depends on env
         "trimes.fft needs scipy; install it with: pip install 'trimes[dsp]'"
     ) from _exc
 
-from trimes.base import time_to_seconds, get_sampling_rate
+from trimes.base import FrameOrSeries, get_sampling_rate, time_to_seconds
 
 __all__ = [
     "rfft",
@@ -53,8 +53,6 @@ __all__ = [
     "harmonics",
     "thd",
 ]
-
-FrameOrSeries = pd.Series | pd.DataFrame
 
 
 # --------------------------------------------------------------------------- #
