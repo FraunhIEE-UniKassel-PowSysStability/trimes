@@ -65,13 +65,25 @@ class TestRollingFourier:
         fc = fourier.get_fourier_coef_rolling(df, per)
         np.testing.assert_allclose(fc["x"].to_numpy()[:per], 0.0)
 
-    def test_series_input_still_produces_a_result_per_sample(self, cosine_frame):
+    def test_series_input_returns_a_series(self, cosine_frame):
         df, per = cosine_frame
         fc = fourier.get_fourier_coef_rolling(df["x"], per)
-        assert len(fc) == len(df)
+        assert isinstance(fc, pd.Series)
+        assert fc.shape == df["x"].shape
+        assert fc.name == "x"
+        assert fc.index.equals(df.index)
         np.testing.assert_allclose(
-            np.abs(np.asarray(fc)[2 * per :]).ravel(), 1 / np.sqrt(2), atol=1e-6
+            np.abs(fc.to_numpy()[2 * per :]), 1 / np.sqrt(2), atol=1e-6
         )
+
+    def test_series_input_variable_window_returns_a_series(self, cosine_frame):
+        df, per = cosine_frame
+        time_windows = np.full(len(df), float(per))
+        fc = fourier.get_fourier_coef_rolling(
+            df["x"], per, time_windows=time_windows
+        )
+        assert isinstance(fc, pd.Series)
+        assert fc.shape == df["x"].shape
 
     def test_rolling_can_track_a_harmonic(self):
         n, per = 400, 100
