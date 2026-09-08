@@ -7,7 +7,7 @@ from numpy.typing import ArrayLike
 import pandas as pd
 
 from trimes._optional import ic
-from trimes.synchrophasor.signal import AnalyticSignal, _segment_truth_fns
+from trimes.analytic import AnalyticSignal, _segment_truth_fns
 from trimes.base import superpose_series, get_index
 
 if TYPE_CHECKING:

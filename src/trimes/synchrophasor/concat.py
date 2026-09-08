@@ -1,6 +1,6 @@
 """Phase 2: phase-continuous concatenation of analytic segments.
 
-:func:`concat_segments` builds one :class:`~trimes.synchrophasor.signal.AnalyticSignal`
+:func:`concat_segments` builds one :class:`~trimes.analytic.AnalyticSignal`
 from a list of ``(duration, spec)`` segments, carrying the fundamental phase
 across every boundary so the concatenated truth is C0 unless a jump is asked
 for. It replaces hand-rolled steady -> event -> recovery builders.
@@ -11,8 +11,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from trimes.synchrophasor.signal import AnalyticSignal
-from trimes.synchrophasor.util import TWO_PI
+from trimes.analytic import AnalyticSignal, TWO_PI
 
 __all__ = ["concat_segments"]
 
@@ -88,7 +87,7 @@ def _segment_local_callables(spec, duration: float, nominal: float):
     from trimes.signal_generation import PeriodicSignal
 
     if isinstance(spec, PeriodicSignal):
-        from trimes.synchrophasor.signal import _segment_truth_fns
+        from trimes.analytic import _segment_truth_fns
 
         amp, freq, phase, ts, _ = _segment_truth_fns(spec)
         p0 = float(np.atleast_1d(phase(np.array([ts])))[0])
@@ -130,7 +129,7 @@ def concat_segments(
     segments : list of (float, spec)
         ``spec`` is a dict (see :func:`_spec_local_callables`), a
         :class:`~trimes.signal_generation.PeriodicSignal`, an
-        :class:`~trimes.synchrophasor.signal.AnalyticSignal`, or a callable
+        :class:`~trimes.analytic.AnalyticSignal`, or a callable
         ``duration -> (amplitude_fn, frequency_fn, total_phase_fn)``.
     fs : float
         Sampling rate in Hz.

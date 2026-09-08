@@ -10,6 +10,6 @@ submodules behind optional extras:
 
 from trimes.base import *  # noqa: F401,F403  (re-export, guarded by base.__all__)
 from trimes.base import __all__ as _base_all
-from trimes.synchrophasor import AnalyticSignal
+from trimes.analytic import AnalyticSignal
 
 __all__ = [*_base_all, "AnalyticSignal"]

@@ -1,6 +1,6 @@
 """Phase 4: IEC/IEEE 60255-118-1:2018 test-condition generators.
 
-Each function returns an :class:`~trimes.synchrophasor.signal.AnalyticSignal`
+Each function returns an :class:`~trimes.analytic.AnalyticSignal`
 whose ``metadata`` carries ``test``, ``class`` (``"P"`` / ``"M"``), ``limits``
 (the ``tve`` / ``fe`` / ``rfe`` values that apply -- reporting-rate-dependent
 where the standard makes them so) and the condition's parameter values.
@@ -16,8 +16,7 @@ import numpy as np
 from trimes.synchrophasor import generators as _gen
 from trimes.synchrophasor import limits as _lim
 from trimes.synchrophasor.concat import concat_segments
-from trimes.synchrophasor.signal import AnalyticSignal, build_analytic_signal
-from trimes.synchrophasor.util import TWO_PI
+from trimes.analytic import AnalyticSignal, build_analytic_signal, TWO_PI
 
 __all__ = [
     "frequency_range",

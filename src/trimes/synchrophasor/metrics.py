@@ -2,7 +2,7 @@
 
 The error functions take an estimator ``trace`` -- a DataFrame with a time
 index and at least a ``phasor`` column (``frequency`` and ``rocof`` optional)
--- and an :class:`~trimes.synchrophasor.signal.AnalyticSignal`, evaluate the
+-- and an :class:`~trimes.analytic.AnalyticSignal`, evaluate the
 signal's truth at the trace's own reporting instants, and compare.
 
 numpy + pandas only.
@@ -13,8 +13,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from trimes.synchrophasor.signal import AnalyticSignal
-from trimes.synchrophasor.util import wrap_pi
+from trimes.analytic import AnalyticSignal, wrap_pi
 
 __all__ = [
     "ERROR_COLUMNS",

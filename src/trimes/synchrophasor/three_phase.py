@@ -1,7 +1,7 @@
 """Phase 3: three-phase expansion with symmetrical-component content.
 
 :func:`three_phase` turns a single-phase positive-sequence
-:class:`~trimes.synchrophasor.signal.AnalyticSignal` into an ``abc`` set with
+:class:`~trimes.analytic.AnalyticSignal` into an ``abc`` set with
 optional negative- and zero-sequence content, per-phase harmonics and
 per-phase noise. The amplitude-invariant (Fortescue / Clarke) convention is
 used: for a balanced set each phase peak equals ``|V+|``, so the returned
@@ -15,8 +15,7 @@ import dataclasses
 import numpy as np
 import pandas as pd
 
-from trimes.synchrophasor.signal import AnalyticSignal
-from trimes.synchrophasor.util import TWO_PI
+from trimes.analytic import AnalyticSignal, TWO_PI
 
 __all__ = ["three_phase"]
 

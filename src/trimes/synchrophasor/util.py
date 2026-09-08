@@ -1,32 +1,11 @@
-"""Small numeric helpers shared across the synchrophasor layer.
+"""Backward-compatible alias for the phasor/angle helpers.
 
-Kept in one place so :mod:`trimes.synchrophasor.signal`, ``.generators``,
-``.metrics`` and ``.plot`` agree on the phasor and angle conventions.
+``wrap_pi``, ``rms_phasor``, ``TWO_PI`` and ``ROCOF_STEP`` moved to the core
+module :mod:`trimes.analytic`. Import from there in new code.
 """
 
 from __future__ import annotations
 
-import numpy as np
+from trimes.analytic import ROCOF_STEP, TWO_PI, rms_phasor, wrap_pi
 
 __all__ = ["TWO_PI", "ROCOF_STEP", "wrap_pi", "rms_phasor"]
-
-TWO_PI = 2.0 * np.pi
-
-#: Half-step of the central difference used for the ROCOF truth, in seconds.
-ROCOF_STEP = 1e-4
-
-
-def wrap_pi(x) -> np.ndarray:
-    """Wrap an angle (radians) into ``[-pi, pi)``."""
-    return (np.asarray(x, dtype=float) + np.pi) % TWO_PI - np.pi
-
-
-def rms_phasor(amplitude, phase) -> np.ndarray:
-    """RMS complex phasor from a peak amplitude and a phase in radians.
-
-    ``(amplitude / sqrt(2)) * exp(1j * phase)`` -- the convention an IEC/IEEE
-    60255-118-1 estimator reports.
-    """
-    amplitude = np.asarray(amplitude, dtype=float)
-    phase = np.asarray(phase, dtype=float)
-    return (amplitude / np.sqrt(2.0)) * np.exp(1j * phase)

@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from trimes.synchrophasor.metrics import errors
-from trimes.synchrophasor.signal import AnalyticSignal
+from trimes.analytic import AnalyticSignal
 
 __all__ = ["plot_waveform", "plot_errors", "plot_sweep_heatmap"]
 

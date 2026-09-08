@@ -1,12 +1,13 @@
 """Synchrophasor test signals, analytic ground truth, compliance metrics.
 
-The IEC/IEEE 60255-118-1 benchmark layer:
+The IEC/IEEE 60255-118-1 benchmark layer, built on top of the core
+:mod:`trimes.analytic`:
 
-* :class:`AnalyticSignal` -- a sampled waveform plus exact
+* :class:`AnalyticSignal` / :func:`build_analytic_signal` -- re-exported from
+  :mod:`trimes.analytic`: a sampled waveform plus exact
   ``amplitude`` / ``frequency`` / ``total_phase`` callables, from which the
   ``phase`` / ``phasor`` / ``rocof`` / ``ground_truth`` an estimator is scored
   against are derived at arbitrary instants.
-* :func:`build_analytic_signal` -- factory from closed-form callables.
 * basic generators (:func:`steady_state`, :func:`modulation`,
   :func:`frequency_ramp`, :func:`amplitude_step`, :func:`phase_step`).
 * :func:`concat_segments` -- phase-continuous concatenation (Phase 2).
@@ -21,6 +22,14 @@ The IEC/IEEE 60255-118-1 benchmark layer:
 numpy + pandas only (``plot`` aside).
 """
 
+from trimes.analytic import (
+    ROCOF_STEP,
+    TWO_PI,
+    AnalyticSignal,
+    build_analytic_signal,
+    rms_phasor,
+    wrap_pi,
+)
 from trimes.synchrophasor import conditions, limits, metrics
 from trimes.synchrophasor.concat import concat_segments
 from trimes.synchrophasor.generators import (
@@ -39,9 +48,7 @@ from trimes.synchrophasor.metrics import (
     summary,
     tve,
 )
-from trimes.synchrophasor.signal import AnalyticSignal, build_analytic_signal
 from trimes.synchrophasor.three_phase import three_phase
-from trimes.synchrophasor.util import ROCOF_STEP, TWO_PI, rms_phasor, wrap_pi
 
 __all__ = [
     "AnalyticSignal",

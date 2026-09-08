@@ -1,6 +1,6 @@
 """Analytic test-signal generators.
 
-Each function returns an :class:`~trimes.synchrophasor.signal.AnalyticSignal`
+Each function returns an :class:`~trimes.analytic.AnalyticSignal`
 whose truth callables are exact closed forms. The signatures mirror
 ``pmubench.signals`` so the benchmark can migrate onto trimes with thin
 re-exports.
@@ -28,8 +28,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from trimes.synchrophasor.signal import AnalyticSignal, build_analytic_signal
-from trimes.synchrophasor.util import TWO_PI
+from trimes.analytic import AnalyticSignal, build_analytic_signal, TWO_PI
 
 __all__ = [
     "steady_state",
