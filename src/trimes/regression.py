@@ -1,27 +1,42 @@
-import pandas as pd
+"""Polynomial regression for time series."""
+
 import numpy as np
-from typing import Union
+import pandas as pd
+
+from trimes.base import FrameOrSeries
+
+__all__ = ["polyfit"]
 
 
-def polyfit(ts: Union[pd.DataFrame, pd.Series], degree: int, t_offset=None) -> np.array:
-    """Polynomial fit using numpy's 'polyfit'.
+def polyfit(
+    ts: FrameOrSeries, degree: int, t_offset: float | None = None
+) -> np.ndarray:
+    """Least-squares polynomial fit of ``ts`` against its time index.
 
-    Args:
-        ts (Union[pd.DataFrame, pd.Series]): Values for polynomial fit (x=ts.index, y=ts.to_numpy())
-        degree (int): Polynomial
-        t_offset (bool, optional): time offset (x=ts.index+t_offset)
+    Thin wrapper around :func:`numpy.polyfit` (``x = ts.index``,
+    ``y = ts.to_numpy()``).
 
-    Returns:
-        np.array: Polynomial coeficients
+    Parameters
+    ----------
+    ts : pandas.Series or pandas.DataFrame
+        Time series. For a DataFrame each column is fitted independently.
+    degree : int
+        Degree of the fitting polynomial.
+    t_offset : float, optional
+        Added to the time index before fitting (``x = ts.index + t_offset``),
+        e.g. to recentre the fit and improve conditioning.
 
-    It was tried to implement this function using the more recent polynomial approximation as recommended by numpy as shown below. However, there were problems when 'ts' is a DataFrame.
+    Returns
+    -------
+    numpy.ndarray
+        Polynomial coefficients, highest power first -- shape ``(degree + 1,)``
+        for a Series, ``(degree + 1, n_columns)`` for a DataFrame.
 
-    if not full:
-      return np.polynomial.polynomial.Polynomial.fit(ts.index, ts.to_numpy(), degree).convert().coef
-    else:
-      return np.polynomial.polynomial.Polynomial.fit(ts.index, ts.to_numpy(), degree)
+    Notes
+    -----
+    ``numpy.polynomial.Polynomial.fit`` is the currently recommended API but
+    did not handle the DataFrame (multi-column ``y``) case cleanly, so the
+    legacy :func:`numpy.polyfit` is kept here.
     """
-    if not t_offset:
-        return np.polyfit(ts.index, ts.to_numpy(), degree)
-    else:
-        return np.polyfit(ts.index + t_offset, ts.to_numpy(), degree)
+    x = ts.index if t_offset is None else ts.index + t_offset
+    return np.polyfit(x, ts.to_numpy(), degree)

@@ -1,19 +1,43 @@
+"""Reference-frame transforms for three-phase signals.
+
+Park (``dq0``), Clarke (``alpha-beta-0``) and Fortescue (symmetrical
+components), all in the amplitude-invariant convention, plus a generic
+row-wise transform helper.
+"""
+
 from collections.abc import Callable
 
 import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
 
+__all__ = [
+    "transform_time_series",
+    "abc_2_dq0",
+    "dq0_2_abc",
+    "frobenius_matrix_symcomp",
+    "inverse_frobenius_matrix_symcomp",
+    "abc_2_symmetrical_components",
+    "symmetrical_components_2_abc",
+    "abc_2_ab0",
+]
+
 
 def transform_time_series(ts: pd.DataFrame, transform: Callable) -> pd.DataFrame:
-    """Apply transformation to time series.
+    """Apply a per-row transform to a time series.
 
-    Args:
-        ts (pd.DataFrame): original
-        transform (Callable): transformation
+    Parameters
+    ----------
+    ts : pandas.DataFrame
+        Time series; each row is passed to ``transform``.
+    transform : callable
+        Maps one row (a length-``n_columns`` array) to a new length-``n_columns``
+        array.
 
-    Returns:
-        pd.DataFrame: Transformed time series
+    Returns
+    -------
+    pandas.DataFrame
+        The transformed series, same shape and index as ``ts``.
     """
     ts_transformed = np.reshape(
         np.concatenate(ts.apply(transform, axis=1).to_numpy()), ts.shape
@@ -21,19 +45,24 @@ def transform_time_series(ts: pd.DataFrame, transform: Callable) -> pd.DataFrame
     return pd.DataFrame(ts_transformed, index=ts.index)
 
 
-def abc_2_dq0(abc: np.array, phi: float) -> np.array:
-    """Park transform (3-phase, amplitude invariant).
+def abc_2_dq0(abc: ArrayLike, phi: float) -> np.ndarray:
+    """Park transform, three-phase, amplitude invariant.
 
-    According to mathworks.com/help/sps/ref/parktransform
+    Follows mathworks.com/help/sps/ref/parktransform.
 
-    Args:
-        abc (np.array): Three phase signal in natural frame
-        phi (float): angle between a and d axis
+    Parameters
+    ----------
+    abc : array_like
+        Three-phase signal in the natural frame (3 rows).
+    phi : float
+        Angle between the ``a`` and ``d`` axes, in radians.
 
-    Returns:
-        np.array: Signals in rotating frame
+    Returns
+    -------
+    numpy.ndarray
+        The ``d``, ``q``, ``0`` components.
     """
-    abc_2_dq0_matrix: np.array = (
+    abc_2_dq0_matrix = (
         2
         / 3
         * np.array(
@@ -51,17 +80,22 @@ def abc_2_dq0(abc: np.array, phi: float) -> np.array:
     return np.dot(abc_2_dq0_matrix, abc)
 
 
-def dq0_2_abc(dq0: np.array, phi: float) -> np.array:
-    """Inverse park transform (3-phase, amplitude invariant).
+def dq0_2_abc(dq0: ArrayLike, phi: float) -> np.ndarray:
+    """Inverse Park transform, three-phase, amplitude invariant.
 
-    According to mathworks.com/help/sps/ref/inverseparktransform
+    Follows mathworks.com/help/sps/ref/inverseparktransform.
 
-    Args:
-        dq0 (np.array): Signals in rotating frame
-        phi (float): angle between a and d axis
+    Parameters
+    ----------
+    dq0 : array_like
+        Signal in the rotating frame (3 rows: ``d``, ``q``, ``0``).
+    phi : float
+        Angle between the ``a`` and ``d`` axes, in radians.
 
-    Returns:
-        np.array: Signals in natural frame
+    Returns
+    -------
+    numpy.ndarray
+        The ``a``, ``b``, ``c`` components.
     """
     dq0_2_abc_matrix = np.array(
         [
@@ -81,57 +115,76 @@ def dq0_2_abc(dq0: np.array, phi: float) -> np.array:
     return np.dot(dq0_2_abc_matrix, dq0)
 
 
-def frobenius_matrix_symcomp() -> ArrayLike:
-    """Frobenius matrix matrix to transfom from abc to 012
+def frobenius_matrix_symcomp() -> np.ndarray:
+    """Fortescue matrix transforming ``abc`` to symmetrical components ``012``.
 
-    Returns:
-        ArrayLike: Frobenius matrix
+    Returns
+    -------
+    numpy.ndarray
+        The 3x3 complex matrix, including the ``1/3`` factor. Rows are the
+        zero-, positive- and negative-sequence projections.
     """
     a = np.exp(2 / 3 * np.pi * 1j)
-    # return 1 / 3 * np.array([[1, a, a * a], [1, a * a, a], [1, 1, 1]])
     return 1 / 3 * np.array([[1, 1, 1], [1, a, a * a], [1, a * a, a]])
 
 
-def inverse_frobenius_matrix_symcomp() -> ArrayLike:
-    """Inverse Frobenius matrix to transfom from 012 to abc.
+def inverse_frobenius_matrix_symcomp() -> np.ndarray:
+    """Inverse Fortescue matrix transforming ``012`` back to ``abc``.
 
     The exact inverse of :func:`frobenius_matrix_symcomp` (no ``1/3`` factor --
-    that factor sits on the forward transform only), so
+    that sits on the forward transform only), so
     ``symmetrical_components_2_abc(abc_2_symmetrical_components(x)) == x``.
 
-    Returns:
-        ArrayLike: Inverse Frobenius matrix
+    Returns
+    -------
+    numpy.ndarray
+        The 3x3 complex matrix.
     """
     a = np.exp(2 / 3 * np.pi * 1j)
     return np.array([[1, 1, 1], [1, a * a, a], [1, a, a * a]])
 
 
-def abc_2_symmetrical_components(abc: np.array) -> ArrayLike:
-    """Transform three-phase values to symmetrical components
+def abc_2_symmetrical_components(abc: ArrayLike) -> np.ndarray:
+    """Transform three-phase values to symmetrical components.
 
-    Args:
-        abc (np.array): columns are phase values over time
+    Parameters
+    ----------
+    abc : array_like
+        Columns are the phase values over time (3 columns).
 
-    Returns:
-        ArrayLike: columns are zero, positive and negative sequence (012)
+    Returns
+    -------
+    numpy.ndarray
+        Columns are the zero-, positive- and negative-sequence values
+        (order ``012``).
     """
-    return np.dot(frobenius_matrix_symcomp(), abc.T).T
+    return np.dot(frobenius_matrix_symcomp(), np.asarray(abc).T).T
 
 
-def symmetrical_components_2_abc(sym_cmp: np.array) -> ArrayLike:
-    return np.dot(inverse_frobenius_matrix_symcomp(), sym_cmp.T).T
+def symmetrical_components_2_abc(sym_cmp: ArrayLike) -> np.ndarray:
+    """Transform symmetrical components (``012``) back to three-phase ``abc``.
 
-
-def abc_2_ab0(abc: np.array) -> np.array:
-    """Clarke transformation from abc to alpha, beta, zero.
-
-    Args:
-        abc (np.array): abc values
-
-    Returns:
-        np.array: alpha, beta, zero values
+    Inverse of :func:`abc_2_symmetrical_components`.
     """
-    abc2ab0_matrix: np.matrix = (
+    return np.dot(inverse_frobenius_matrix_symcomp(), np.asarray(sym_cmp).T).T
+
+
+def abc_2_ab0(abc: ArrayLike) -> np.ndarray:
+    """Clarke transform from ``abc`` to ``alpha``, ``beta``, ``0``.
+
+    Amplitude-invariant convention.
+
+    Parameters
+    ----------
+    abc : array_like
+        Three-phase signal (3 rows).
+
+    Returns
+    -------
+    numpy.ndarray
+        The ``alpha``, ``beta``, ``0`` components.
+    """
+    abc2ab0_matrix = (
         2
         / 3
         * np.array(
