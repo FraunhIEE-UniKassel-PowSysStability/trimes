@@ -105,3 +105,53 @@ class TestCosineSimilarity:
         got = metrics.get_cosine_similarity_matrix_as_df(df)
         assert list(got.columns) == ["x", "y", "z"]
         assert list(got.index) == ["x", "y", "z"]
+
+
+class TestRmseAndMaxAbsError:
+    def test_rmse_matches_scikit_learn(self):
+        rng = np.random.default_rng(3)
+        y_true = rng.normal(size=50)
+        y_pred = y_true + rng.normal(scale=0.3, size=50)
+        assert metrics.rmse(y_true, y_pred) == pytest.approx(
+            root_mean_squared_error(y_true, y_pred)
+        )
+
+    def test_rmse_weighted_matches_scikit_learn(self):
+        rng = np.random.default_rng(4)
+        y_true = rng.normal(size=40)
+        y_pred = y_true + rng.normal(scale=0.5, size=40)
+        weight = rng.uniform(0.5, 2.0, size=40)
+        assert metrics.rmse(y_true, y_pred, sample_weight=weight) == pytest.approx(
+            root_mean_squared_error(y_true, y_pred, sample_weight=weight)
+        )
+
+    def test_rmse_of_a_constant_offset_is_that_offset(self):
+        assert metrics.rmse(np.zeros(10), np.full(10, -3.0)) == pytest.approx(3.0)
+
+    def test_rmse_raw_values_broadcast_a_1d_reference_over_columns(self):
+        y_true = np.zeros(4)
+        y_pred = np.column_stack([np.full(4, 1.0), np.full(4, 2.0)])
+        got = metrics.rmse(y_true, y_pred, multioutput="raw_values")
+        np.testing.assert_allclose(got, [1.0, 2.0])
+
+    def test_max_abs_error_finds_the_largest_deviation_of_either_sign(self):
+        y_true = np.zeros(5)
+        y_pred = np.array([0.1, -0.7, 0.3, 0.5, 0.0])
+        assert metrics.max_abs_error(y_true, y_pred) == pytest.approx(0.7)
+
+    def test_max_abs_error_ignores_sample_weight(self):
+        y_true = np.zeros(3)
+        y_pred = np.array([0.0, 2.0, 0.0])
+        weight = np.array([1.0, 1e-9, 1.0])
+        assert metrics.max_abs_error(y_true, y_pred, weight) == pytest.approx(2.0)
+
+    def test_both_metrics_work_through_get_metric_time_series_without_sklearn(self):
+        idx = np.arange(0.0, 1.0, 0.1)
+        ref = pd.Series(np.zeros(idx.size), index=idx)
+        ts = pd.Series(np.full(idx.size, 2.0), index=idx)
+        assert metrics.get_metric_time_series(ts, ref, metrics.rmse) == pytest.approx(
+            2.0
+        )
+        assert metrics.get_metric_time_series(
+            ts, ref, metrics.max_abs_error
+        ) == pytest.approx(2.0)

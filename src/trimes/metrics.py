@@ -21,6 +21,8 @@ __all__ = [
     "get_metric_np",
     "integral_abs_error",
     "integral_squared_error",
+    "rmse",
+    "max_abs_error",
     "get_cosine_similarity",
     "get_cosine_similarity_matrix",
     "get_cosine_similarity_matrix_as_df",
@@ -168,6 +170,75 @@ def integral_squared_error(
     weighted_error = _weighted_error(y_true, y_pred, sample_weight)
     integrated_error = _trapezoid(np.square(weighted_error), axis=0)
     return _handle_sklearn_multioutput(multioutput, integrated_error)
+
+
+def _error(y_true: ArrayLike, y_pred: ArrayLike) -> np.ndarray:
+    """Return ``y_pred - y_true`` with a 1-D ``y_true`` broadcast over columns."""
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    if y_pred.ndim == 2 and y_true.ndim == 1:
+        y_true = y_true[:, None]
+    return y_pred - y_true
+
+
+def rmse(
+    y_true: ArrayLike,
+    y_pred: ArrayLike,
+    sample_weight: ArrayLike | None = None,
+    multioutput: str | ArrayLike = "uniform_average",
+) -> float | ArrayLike:
+    """Root mean squared error, without a dependency on scikit-learn.
+
+    An sklearn-style metric with the signature of
+    :func:`sklearn.metrics.root_mean_squared_error`, so it can be passed to
+    :func:`get_metric_time_series` and to the comparison helpers. With the time
+    step as ``sample_weight`` the result is the time-weighted RMSE.
+
+    Parameters
+    ----------
+    y_true, y_pred : array_like
+        True and predicted values, shape ``(n,)`` or ``(n, n_columns)``. A 1-D
+        ``y_true`` is broadcast across the columns of ``y_pred``.
+    sample_weight : array_like, optional
+        Per-sample weights, shape ``(n,)``.
+    multioutput : {'uniform_average', 'raw_values'} or array_like, default 'uniform_average'
+        Column aggregation, following the sklearn convention.
+
+    Returns
+    -------
+    float or numpy.ndarray
+    """
+    squared = np.square(_error(y_true, y_pred))
+    per_column = np.sqrt(np.average(squared, axis=0, weights=sample_weight))
+    return _handle_sklearn_multioutput(multioutput, per_column)
+
+
+def max_abs_error(
+    y_true: ArrayLike,
+    y_pred: ArrayLike,
+    sample_weight: ArrayLike | None = None,
+    multioutput: str | ArrayLike = "uniform_average",
+) -> float | ArrayLike:
+    """Largest absolute deviation ``max |y_pred - y_true|``.
+
+    An sklearn-style metric like :func:`rmse`. ``sample_weight`` is accepted for
+    call compatibility and ignored, because a maximum is not an average.
+
+    Parameters
+    ----------
+    y_true, y_pred : array_like
+        True and predicted values, shape ``(n,)`` or ``(n, n_columns)``.
+    sample_weight : array_like, optional
+        Ignored.
+    multioutput : {'uniform_average', 'raw_values'} or array_like, default 'uniform_average'
+        Column aggregation, following the sklearn convention.
+
+    Returns
+    -------
+    float or numpy.ndarray
+    """
+    per_column = np.max(np.abs(_error(y_true, y_pred)), axis=0)
+    return _handle_sklearn_multioutput(multioutput, per_column)
 
 
 def _weighted_error(
