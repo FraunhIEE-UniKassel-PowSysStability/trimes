@@ -25,6 +25,7 @@ SUBMODULES = [
     "trimes.root_mean_square",
     "trimes.signal_generation",
     "trimes.signal_processing",
+    "trimes.step_response",
     "trimes.synchrophasor",
     "trimes.synchrophasor.concat",
     "trimes.synchrophasor.conditions",

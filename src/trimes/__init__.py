@@ -50,6 +50,7 @@ _SUBMODULES = frozenset(
         "root_mean_square",
         "signal_generation",
         "signal_processing",
+        "step_response",
         "synchrophasor",
         "transforms",
     }

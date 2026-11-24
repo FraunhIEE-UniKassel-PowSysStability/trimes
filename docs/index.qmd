@@ -33,15 +33,16 @@ pip install trimes
 ```
 
 The core -- `import trimes`, the `.trimes` accessor, `trimes.base`,
-`trimes.analytic`, `trimes.phasor` and `trimes.synchrophasor` (its `plot`
-submodule aside) -- needs only numpy and pandas. Heavier functionality is
+`trimes.analytic`, `trimes.phasor`, `trimes.step_response` and
+`trimes.synchrophasor` (its `plot` submodule aside) -- needs only numpy and
+pandas. Heavier functionality is
 behind optional extras:
 
 | extra | pulls in | enables |
 |-------|----------|---------|
 | `trimes[viz]` | matplotlib | `trimes.plots`, `PeriodicSignal.plot*` |
 | `trimes[dsp]` | scipy | `trimes.fft`, `.filter`, `.derivative`, `signal_processing.get_angle` |
-| `trimes[control]` | python-control, icecream | `trimes.control` (step-response info) |
+| `trimes[control]` | python-control, icecream | `trimes.control` (step-response info via python-control; `trimes.step_response` is the numpy-only alternative) |
 | `trimes[all]` | all of the above | everything |
 
 ```
