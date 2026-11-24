@@ -48,6 +48,7 @@ _SUBMODULES = frozenset(
         "plots",
         "regression",
         "root_mean_square",
+        "signal_characteristics",
         "signal_generation",
         "signal_processing",
         "step_response",
