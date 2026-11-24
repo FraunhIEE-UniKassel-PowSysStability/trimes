@@ -131,7 +131,7 @@ def rms_min_max(
 
     Takes ``max(phases) - min(phases)`` per sample, scales it to an RMS, and
     low-pass filters (first order) to suppress the residual ripple. Follows
-    www.pscad.com/webhelp/EMTDC_Tools_Library/Meters/vm3ph2.
+    https://www.pscad.com/webhelp/EMTDC_Tools_Library/Meters/vm3ph2.
 
     Parameters
     ----------
