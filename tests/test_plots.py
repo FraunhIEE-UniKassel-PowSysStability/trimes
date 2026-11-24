@@ -60,3 +60,42 @@ class TestPlotHelpers:
         fig, ax = plt.subplots()
         plots.fill_between(lo, hi, ax=ax)
         assert ax.collections
+
+
+class TestPlotWithError:
+    @staticmethod
+    def _series(times, values, name):
+        return pd.Series(values, index=pd.Index(times, name="time"), name=name)
+
+    def test_returns_signal_and_error_axes(self):
+        times = np.linspace(0.0, 1.0, 11)
+        reference = self._series(times, np.sin(times), "reference")
+        ax, error_axis = plots.plot_with_error(reference, reference + 0.1)
+        assert ax is not error_axis
+        assert len(ax.get_lines()) == 2
+        assert len(error_axis.get_lines()) == 1
+
+    def test_error_is_estimate_minus_reference_on_the_estimate_grid(self):
+        reference = self._series(np.array([0.0, 1.0]), np.array([0.0, 10.0]), "reference")
+        estimate_times = np.array([0.25, 0.5, 0.75])
+        estimate = self._series(estimate_times, np.array([3.0, 5.0, 7.0]), "estimate")
+        _, error_axis = plots.plot_with_error(reference, estimate)
+        error_line = error_axis.get_lines()[0]
+        np.testing.assert_allclose(error_line.get_xdata(), estimate_times)
+        np.testing.assert_allclose(error_line.get_ydata(), [0.5, 0.0, -0.5])
+
+    def test_one_legend_lists_all_three_curves(self):
+        times = np.linspace(0.0, 1.0, 11)
+        reference = self._series(times, times, "reference")
+        ax, _ = plots.plot_with_error(
+            reference, reference, reference_label="truth", estimate_label="method", error_label="error"
+        )
+        assert [text.get_text() for text in ax.get_legend().get_texts()] == ["truth", "method", "error"]
+
+    def test_draws_on_the_given_axes(self):
+        _, (top, bottom) = plt.subplots(2, 1)
+        times = np.linspace(0.0, 1.0, 11)
+        reference = self._series(times, times, "reference")
+        ax, _ = plots.plot_with_error(reference, reference, bottom)
+        assert ax is bottom
+        assert not top.get_lines()

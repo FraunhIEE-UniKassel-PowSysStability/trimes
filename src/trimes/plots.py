@@ -62,6 +62,80 @@ def plot_2y(
     return ax1, ax2
 
 
+def plot_with_error(
+    reference: pd.Series,
+    estimate: pd.Series,
+    ax: Axes | None = None,
+    *,
+    reference_label: str = "reference",
+    estimate_label: str = "estimate",
+    error_label: str = "error",
+    reference_kwargs: dict | None = None,
+    estimate_kwargs: dict | None = None,
+    error_kwargs: dict | None = None,
+    legend_loc: str = "best",
+) -> tuple[Axes, Axes]:
+    """Plot an estimate against its reference, with the error on a second y-axis.
+
+    The reference and the estimate share the left y-axis. The error
+    ``estimate - reference`` is drawn against a secondary y-axis on the right,
+    whose label and ticks take the colour of the error curve, so that a small
+    error stays visible beside large signals. The error is evaluated at the
+    instants of ``estimate``, with ``reference`` linearly interpolated onto them
+    by :func:`trimes.base.resample`, so the two series need not share a time
+    grid. One legend lists all three curves.
+
+    Parameters
+    ----------
+    reference : pandas.Series
+        The reference, indexed by time.
+    estimate : pandas.Series
+        The estimate, indexed by time, within the time span of ``reference``.
+    ax : matplotlib.axes.Axes, optional
+        Axes to draw on. Defaults to the current axes.
+    reference_label, estimate_label, error_label : str
+        Legend entries of the three curves. ``error_label`` also labels the
+        right y-axis.
+    reference_kwargs, estimate_kwargs, error_kwargs : dict, optional
+        Keyword arguments forwarded to :meth:`~matplotlib.axes.Axes.plot` of
+        the respective curve, on top of the default styles.
+    legend_loc : str, default "best"
+        Location of the legend on ``ax``.
+
+    Returns
+    -------
+    tuple of matplotlib.axes.Axes
+        The axes of the signals and the axes of the error.
+    """
+    if ax is None:
+        ax = plt.gca()
+    times = estimate.index.to_numpy(dtype=float)
+    reference_at_estimate = resample(reference, times)
+    error = estimate.to_numpy(dtype=float) - np.asarray(reference_at_estimate, dtype=float)
+
+    reference_style = {"color": "0.35", "linewidth": 1.6, **(reference_kwargs or {})}
+    estimate_style = {"color": "tab:blue", "linewidth": 1.0, **(estimate_kwargs or {})}
+    error_style = {"color": "tab:red", "linewidth": 0.8, "alpha": 0.8, **(error_kwargs or {})}
+
+    ax.plot(
+        reference.index.to_numpy(dtype=float),
+        reference.to_numpy(dtype=float),
+        label=reference_label,
+        **reference_style,
+    )
+    ax.plot(times, estimate.to_numpy(dtype=float), label=estimate_label, **estimate_style)
+
+    error_axis = ax.twinx()
+    error_axis.plot(times, error, label=error_label, **error_style)
+    error_axis.set_ylabel(error_label, color=error_style["color"])
+    error_axis.tick_params(axis="y", colors=error_style["color"])
+
+    signal_handles, signal_labels = ax.get_legend_handles_labels()
+    error_handles, error_labels = error_axis.get_legend_handles_labels()
+    ax.legend(signal_handles + error_handles, signal_labels + error_labels, loc=legend_loc)
+    return ax, error_axis
+
+
 def fill_between(
     ts1: pd.Series,
     ts2: pd.Series,
