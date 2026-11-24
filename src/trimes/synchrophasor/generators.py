@@ -285,8 +285,8 @@ def modulation(
         seed=seed,
         name=f"modulation_{fm:g}Hz",
         metadata={
-            "am_depth": ka,
-            "pm_depth": kx,
+            "am_depth": kx,
+            "pm_depth": ka,
             "modulation_frequency": fm,
             "transition_times": [],
         },

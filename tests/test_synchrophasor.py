@@ -186,6 +186,33 @@ class TestModulation:
         np.testing.assert_allclose(asig.rocof(q), analytic, atol=1e-5)
 
 
+class TestModulationGeneratorMetadata:
+    """The generator must record each depth under its own name."""
+
+    def test_am_and_pm_depth_metadata_are_not_swapped(self):
+        sig = gen.modulation(
+            FS, 50.0, 1.0, am_depth=0.2, pm_depth=0.05, modulation_frequency=2.0
+        )
+        assert sig.metadata["am_depth"] == pytest.approx(0.2)
+        assert sig.metadata["pm_depth"] == pytest.approx(0.05)
+
+    def test_metadata_depths_reproduce_the_truth(self):
+        sig = gen.modulation(
+            FS, 50.0, 1.0, am_depth=0.2, pm_depth=0.05, modulation_frequency=2.0
+        )
+        t = np.linspace(0.0, 2.0, 41)
+        wm = TWO_PI * sig.metadata["modulation_frequency"]
+        np.testing.assert_allclose(
+            sig.amplitude(t), 1.0 + sig.metadata["am_depth"] * np.cos(wm * t), atol=ATOL
+        )
+        np.testing.assert_allclose(
+            sig.frequency(t),
+            50.0
+            + sig.metadata["pm_depth"] * sig.metadata["modulation_frequency"] * np.sin(wm * t),
+            atol=ATOL,
+        )
+
+
 class TestGroundTruth:
     def test_dataframe_shape_columns_and_index(self, grid, query):
         asig = PeriodicSignal(grid, f=50.5, mag=1.2, phi=0.4).analytic_signal(50.0)
